@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rider Dashboard — WiYone Cab</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+      body{font-family:'Quicksand',Arial,Helvetica,sans-serif;background:#f3f4f6;margin:0;padding:18px}
+      .wrap{max-width:960px;margin:0 auto}
+      header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+      .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 20px rgba(2,6,23,.06)}
+      form .row{display:flex;gap:8px}
+      input, select{padding:8px;border:1px solid #e6e9ef;border-radius:8px;width:100%;box-sizing:border-box}
+      button{background:#0078d4;color:#fff;border:none;padding:10px 14px;border-radius:8px}
+      ul{list-style:none;padding-left:0;margin:0}
+      li{padding:12px;border-bottom:1px solid #eef2f7}
+      .small{color:#6b7280;font-size:13px}
+      @media (max-width:640px){
+        .row{flex-direction:column}
+        header{flex-direction:column;align-items:flex-start;gap:10px}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <h1 style="margin:0">Rider Dashboard</h1>
+          <div class="small">Welcome, {{ request.user.username }}</div>
+        </div>
+        <div>
+          <a style="color:#0078d4;text-decoration:none" href="/accounts/logout/">Logout</a>
+        </div>
+      </header>
+
+      <section class="card" style="margin-bottom:12px">
+        <h2 style="margin-top:0">Request a ride</h2>
+        {% if error %}<div style="color:#b00020">{{ error }}</div>{% endif %}
+        <form method="post" action="/api/rides/create/">
+          {% csrf_token %}
+          <div class="row">
+            <div style="flex:1">
+              <label class="small">Origin<input name="origin" required></label>
+            </div>
+            <div style="flex:1">
+              <label class="small">Destination<input name="destination" required></label>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <label class="small">Transport type
+              <select name="transport_type">
+                <option value="taxi">Taxi</option>
+                <option value="bike">Bike</option>
+              </select>
+            </label>
+          </div>
+          <div style="margin-top:10px"><button type="submit">Place request</button></div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top:0">Your rides</h2>
+        <ul>
+          {% for r in rides %}
+            <li data-ride-id="{{ r.id }}">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <strong>{{ r.origin }} → {{ r.destination }}</strong>
+                  <div class="small">Status: <span class="status-badge">{{ r.status }}</span> • Requested: {{ r.requested_at }}</div>
+                  {% if r.driver %}
+                    <div style="margin-top:8px">Driver: <strong>{{ r.driver.profile.full_name|default:r.driver.username }}</strong> — <a href="tel:{{ r.driver.profile.phone }}">{{ r.driver.profile.phone }}</a></div>
+                  {% endif %}
+                </div>
+                <div>
+                  {% if r.status == 'assigned' and r.driver %}
+                    <form method="post" action="/api/rides/{{ r.id }}/complete/">{% csrf_token %}<button type="submit" onclick="return confirm('Mark this ride completed? This cannot be undone.');">Mark completed</button></form>
+                  {% elif r.status == 'completed' %}
+                    <div class="small">Completed: {{ r.completed_at }}</div>
+                  {% else %}
+                    <div class="small">Waiting for assignment</div>
+                  {% endif %}
+                </div>
+              </div>
+            </li>
+          {% empty %}
+            <li class="small">No ride requests yet.</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <script>
+        // Poll ride status for each ride and update status badge
+        (function(){
+          const items = document.querySelectorAll('li[data-ride-id]');
+          if(items.length === 0) return;
+          async function fetchStatus(id){
+            try{
+              const res = await fetch(`/api/rides/${id}/status/`, {credentials: 'same-origin'});
+              if(!res.ok) return null;
+              return await res.json();
+            }catch(e){return null}
+          }
+          async function refresh(){
+            for(const el of items){
+              const id = el.getAttribute('data-ride-id');
+              const data = await fetchStatus(id);
+              if(!data) continue;
+              const badge = el.querySelector('.status-badge');
+              if(badge) badge.textContent = data.status;
+            }
+          }
+          // initial load and periodic refresh
+          refresh();
+          setInterval(refresh, 10000);
+        })();
+      </script>
+    </div>
+  </body>
+</html>

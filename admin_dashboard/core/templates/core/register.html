@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Register — WiYone Cab</title>
+    <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Quicksand:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+      :root{--brand:#0078d4;--muted:#6b7280}
+      html,body{height:100%}
+      body{font-family:'Quicksand',Arial,Helvetica,sans-serif;background:#f3f4f6;margin:0;display:flex;align-items:center;justify-content:center;padding:24px}
+      .card{width:100%;max-width:420px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.08);padding:28px}
+      .brand{font-family:'Italiana',serif;font-size:28px;color:var(--brand);text-align:center;margin:0 0 8px}
+      .lead{color:var(--muted);text-align:center;margin:0 0 16px}
+      form{display:block}
+      label{display:block;margin:10px 0;font-size:14px}
+      input[type=text], input[type=email], input[type=password], select{width:100%;padding:10px 12px;border:1px solid #e6e9ef;border-radius:8px;background:#fff;box-sizing:border-box}
+      button[type=submit]{margin-top:14px;width:100%;padding:12px;border-radius:8px;border:none;background:var(--brand);color:#fff;font-weight:600}
+      .small{font-size:13px;color:var(--muted)}
+      .errors{background:#fff6f6;border:1px solid #ffd6d6;color:#b00020;padding:10px;border-radius:8px;margin-bottom:12px}
+      .row{display:flex;gap:8px}
+      @media (max-width:480px){.card{padding:20px}}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1 class="brand">WiYone Cab</h1>
+      <p class="lead">Create an account to request or accept rides</p>
+
+      {% if errors %}
+        <div class="errors">{{ errors }}</div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label>Username
+          <input name="username" value="{{ data.username }}" required placeholder="your username">
+        </label>
+
+        <label>Full name
+          <input name="full_name" value="{{ data.full_name }}" required placeholder="First and last name">
+        </label>
+
+        <label>Phone number
+          <input name="phone" value="{{ data.phone }}" required placeholder="e.g. +232...">
+        </label>
+
+        <label>Email (optional)
+          <input type="email" name="email" value="{{ data.email }}" placeholder="you@example.com">
+        </label>
+
+        <label>Password
+          <input name="password" type="password" required placeholder="Choose a strong password">
+        </label>
+
+        <label>Role
+          <select name="role">
+            <option value="rider" {% if data.role == 'rider' %}selected{% endif %}>Rider</option>
+            <option value="driver" {% if data.role == 'driver' %}selected{% endif %}>Driver</option>
+          </select>
+        </label>
+
+        <div id="driver-fields" style="display: none; margin-top:10px;">
+          <label>ID type
+            <select name="id_type">
+              <option value="nin" {% if data.id_type == 'nin' %}selected{% endif %}>National ID (NIN)</option>
+              <option value="passport" {% if data.id_type == 'passport' %}selected{% endif %}>Passport</option>
+            </select>
+          </label>
+          <label>ID number
+            <input name="id_number" value="{{ data.id_number }}" placeholder="NIN or passport number">
+          </label>
+          <label>Upload ID document (photo)
+            <input type="file" name="id_document" accept="image/*,.pdf">
+          </label>
+          <label>Upload driver license
+            <input type="file" name="driver_license" accept="image/*,.pdf">
+          </label>
+          <p class="small">Drivers must upload ID and license; an admin will verify and approve your account.</p>
+        </div>
+
+        <button type="submit">Create account</button>
+        <script>
+          (function(){
+            const roleSelect = document.querySelector('select[name="role"]');
+            const driverFields = document.getElementById('driver-fields');
+            function toggle(){
+              if(roleSelect.value === 'driver') driverFields.style.display = 'block'; else driverFields.style.display = 'none';
+            }
+            roleSelect.addEventListener('change', toggle);
+            toggle();
+          })();
+        </script>
+        <script>
+          // Sync CSRF token value with csrftoken cookie before submitting the multipart form
+          (function(){
+            function getCookie(name){
+              const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+              return v ? decodeURIComponent(v.pop()) : null;
+            }
+            const form = document.querySelector('form[enctype]');
+            if(form){
+              form.addEventListener('submit', function(){
+                const cookie = getCookie('csrftoken');
+                if(!cookie) return;
+                let input = form.querySelector('input[name="csrfmiddlewaretoken"]');
+                if(!input){
+                  input = document.createElement('input');
+                  input.type = 'hidden';
+                  input.name = 'csrfmiddlewaretoken';
+                  form.prepend(input);
+                }
+                input.value = cookie;
+              });
+            }
+          })();
+        </script>
+      </form>
+
+      <p class="small" style="margin-top:12px;text-align:center">Already have an account? <a href="/">Sign in</a></p>
+    </div>
+  </body>
+</html>

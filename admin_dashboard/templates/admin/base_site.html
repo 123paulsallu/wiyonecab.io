@@ -1,0 +1,21 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+<!-- Custom WiYone Cab admin branding -->
+{% block title %}WiYone Cab — Administration{% endblock %}
+
+{% block extrahead %}
+  <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Quicksand:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --wiyone-accent: #0078d4 }
+    .branding h1 { font-family: 'Italiana', serif; font-size: 28px; margin:0 }
+    .module h2 { font-family: 'Quicksand', sans-serif }
+    #header, #header .navbar { background: var(--wiyone-accent); }
+  </style>
+  {{ block.super }}
+{% endblock %}
+
+{% block branding %}
+  <div class="branding">
+    <h1 id="site-name"><a href="{% url 'admin:index' %}">WiYone Cab</a></h1>
+  </div>
+{% endblock %}

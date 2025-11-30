@@ -1,0 +1,9 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+{% block content %}
+  <div class="app-admin-dashboard">
+    <h2>Welcome to WiYone Cab administration</h2>
+    <p>Manage users, vehicles and ride requests for the WiYone Cab service in Kenema.</p>
+    {{ block.super }}
+  </div>
+{% endblock %}
