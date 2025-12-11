@@ -1,6 +1,27 @@
 import { supabase } from './supabase';
 import { getSession } from './customAuth';
 
+export interface Ride {
+  id: string;
+  rider_id: string;
+  driver_id: string | null;
+  origin_address: string;
+  origin_lat: number;
+  origin_lng: number;
+  destination_address: string;
+  destination_lat: number;
+  destination_lng: number;
+  status: 'requested' | 'scheduled' | 'accepted' | 'ongoing' | 'completed' | 'cancelled';
+  vehicle_type: string;
+  requested_at: string;
+  accepted_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function requestRide(params: {
   origin_address?: string;
   origin_lat?: number | null;
@@ -74,7 +95,44 @@ export async function cancelRide(rideId: string) {
 }
 
 export async function getDriverProfile(driverId: string) {
-  const { data, error } = await supabase.from('profiles').select('*').eq('id', driverId).single();
-  if (error) return null;
-  return data;
+  try {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', driverId).single();
+    if (error) {
+      console.error('Error fetching driver profile:', error);
+      return null;
+    }
+    console.log('Driver profile fetched:', data);
+    return data;
+  } catch (err) {
+    console.error('Exception fetching driver profile:', err);
+    return null;
+  }
+}
+
+export async function getRidesForRider(): Promise<Ride[]> {
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('rides')
+    .select('*')
+    .eq('rider_id', session.userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function updateRideStatus(rideId: string, newStatus: Ride['status']): Promise<void> {
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { error } = await supabase.rpc('update_ride_status', {
+    p_ride_id: rideId,
+    p_new_status: newStatus,
+    p_actor_id: session.userId,
+    p_note: `Status updated to ${newStatus}`,
+  });
+
+  if (error) throw error;
 }

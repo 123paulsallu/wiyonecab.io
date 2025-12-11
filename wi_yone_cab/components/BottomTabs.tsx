@@ -50,14 +50,13 @@ export default function BottomTabs({ active }: { active?: string }) {
             activeOpacity={0.7}
           >
             <Animated.View style={[styles.tab, { transform: [{ scale: scaleAnims[index] }] }]}>
-              <View style={isActive ? styles.activeIndicator : null}>
-                <MaterialIcons
-                  name={t.icon as any}
-                  size={24}
-                  color={isActive ? '#FFB81C' : '#666666'}
-                />
-              </View>
+              <MaterialIcons
+                name={t.icon as any}
+                size={24}
+                color={isActive ? '#FFB81C' : '#666666'}
+              />
               <Text style={[styles.label, isActive && styles.labelActive]}>{t.label}</Text>
+              {isActive && <View style={styles.underline} />}
             </Animated.View>
           </TouchableOpacity>
         );
@@ -85,12 +84,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activeIndicator: {
-    backgroundColor: '#FFF3CD',
-    borderRadius: 12,
-    padding: 8,
-    marginBottom: 4,
-  },
   label: {
     fontSize: 11,
     color: '#666',
@@ -99,5 +92,12 @@ const styles = StyleSheet.create({
   labelActive: {
     color: '#FFB81C',
     fontWeight: '700',
+  },
+  underline: {
+    height: 3,
+    backgroundColor: '#FFB81C',
+    borderRadius: 2,
+    marginTop: 4,
+    width: 24,
   },
 });

@@ -1,0 +1,7 @@
+- [x] Add getRidesForRider and updateRideStatus functions to lib/rides.ts
+- [x] Implement requestRide function in lib/rides.ts if not present
+- [x] Modify ride-now.tsx to include tabs: "Request Ride" and "Ride Status"
+- [x] Add state management for tab switching and ride data in ride-now.tsx
+- [x] In "Ride Status" tab, display list of rides with status update options
+- [x] Style the tabs and status update UI to match app design
+- [ ] Test the tab functionality and ride status updates

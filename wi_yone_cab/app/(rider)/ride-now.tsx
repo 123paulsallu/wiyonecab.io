@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform, Modal, FlatList } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { requestRide } from '../../lib/rides';
+import { requestRide, getRidesForRider, updateRideStatus, Ride } from '../../lib/rides';
 import { getSession } from '../../lib/customAuth';
 import BottomTabs from '../../components/BottomTabs';
 
@@ -14,6 +14,41 @@ export default function RideNowScreen() {
   const { scheduled } = useLocalSearchParams();
   const [scheduledDate, setScheduledDate] = useState<string>('');
   const [scheduledTime, setScheduledTime] = useState<string>('');
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [rideId, setRideId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('request');
+  const [loadingRides, setLoadingRides] = useState(false);
+  const [rides, setRides] = useState<Ride[]>([]);
+
+  // Load rides when status tab is active
+  useEffect(() => {
+    if (activeTab === 'status') {
+      loadRides();
+    }
+  }, [activeTab]);
+
+  const loadRides = async () => {
+    setLoadingRides(true);
+    try {
+      const ridesData = await getRidesForRider();
+      setRides(ridesData);
+    } catch (err: any) {
+      Alert.alert('Error', 'Failed to load rides: ' + err.message);
+    } finally {
+      setLoadingRides(false);
+    }
+  };
+
+  const handleStatusUpdate = async (rideId: string, newStatus: Ride['status']) => {
+    try {
+      await updateRideStatus(rideId, newStatus);
+      // Refresh rides list
+      loadRides();
+      Alert.alert('Success', 'Ride status updated successfully');
+    } catch (err: any) {
+      Alert.alert('Error', 'Failed to update status: ' + err.message);
+    }
+  };
 
   const handleRequest = async () => {
     if (!originAddress.trim()) {
@@ -63,7 +98,8 @@ export default function RideNowScreen() {
       });
 
       if (!rideId) throw new Error('No ride id returned');
-      router.push(`/ride-request/${rideId}`);
+      setRideId(rideId);
+      setSuccessModalVisible(true);
     } catch (err: any) {
       Alert.alert('Request failed', err?.message || String(err));
     } finally {
@@ -73,13 +109,30 @@ export default function RideNowScreen() {
 
   return (
     <View style={styles.mainContainer}>
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'request' && styles.activeTab]}
+          onPress={() => setActiveTab('request')}
+        >
+          <Text style={[styles.tabText, activeTab === 'request' && styles.activeTabText]}>Request Ride</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'status' && styles.activeTab]}
+          onPress={() => setActiveTab('status')}
+        >
+          <Text style={[styles.tabText, activeTab === 'status' && styles.activeTabText]}>Ride Status</Text>
+        </TouchableOpacity>
+      </View>
+
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Request a Ride</Text>
-            <Text style={styles.subtitle}>Get a ride in minutes</Text>
-          </View>
+        {activeTab === 'request' ? (
+          <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Request a Ride</Text>
+              <Text style={styles.subtitle}>Get a ride in minutes</Text>
+            </View>
 
           {/* Pickup Section */}
           <View style={styles.section}>
@@ -156,9 +209,105 @@ export default function RideNowScreen() {
 
           <View style={{ height: 80 }} />
         </ScrollView>
+        ) : (
+          <View style={styles.container}>
+            <Text style={styles.title}>Ride Status</Text>
+            {loadingRides ? (
+              <ActivityIndicator size="large" color="#FFB81C" />
+            ) : (
+              <FlatList
+                data={rides}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.rideItem}
+                    onPress={() => {
+                      if (item.status === 'accepted' && item.driver_id) {
+                        router.push(`/driver-details?driverId=${item.driver_id}`);
+                      }
+                    }}
+                    activeOpacity={item.status === 'accepted' ? 0.7 : 1}
+                  >
+                    <View style={styles.rideHeader}>
+                      <View style={styles.rideInfo}>
+                        <Text style={styles.rideText}>From: {item.origin_address}</Text>
+                        <Text style={styles.rideText}>To: {item.destination_address}</Text>
+                      </View>
+                      {item.status === 'accepted' && (
+                        <View style={styles.acceptedBadge}>
+                          <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.rideStatus}>Status: {item.status}</Text>
+                    <View style={styles.statusButtons}>
+                      {item.status === 'requested' && (
+                        <TouchableOpacity
+                          style={styles.statusButton}
+                          onPress={() => handleStatusUpdate(item.id, 'ongoing')}
+                        >
+                          <Text style={styles.statusButtonText}>Mark as Ongoing</Text>
+                        </TouchableOpacity>
+                      )}
+                      {item.status === 'ongoing' && (
+                        <TouchableOpacity
+                          style={styles.statusButton}
+                          onPress={() => handleStatusUpdate(item.id, 'completed')}
+                        >
+                          <Text style={styles.statusButtonText}>Mark as Completed</Text>
+                        </TouchableOpacity>
+                      )}
+                      {item.status !== 'completed' && item.status !== 'cancelled' && (
+                        <TouchableOpacity
+                          style={[styles.statusButton, styles.cancelButton]}
+                          onPress={() => handleStatusUpdate(item.id, 'cancelled')}
+                        >
+                          <Text style={styles.statusButtonText}>Cancel Ride</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    {item.status === 'accepted' && (
+                      <Text style={styles.tapHint}>Tap to view driver details</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={<Text style={styles.emptyText}>No rides found</Text>}
+              />
+            )}
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       <BottomTabs active="rides" />
+
+      {/* Success Modal */}
+      <Modal
+        visible={successModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSuccessModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <MaterialIcons name="check-circle" size={64} color="#FFB81C" />
+            <Text style={styles.modalTitle}>Ride Requested Successfully!</Text>
+            <Text style={styles.modalMessage}>
+              Your ride has been requested. A driver will be assigned shortly.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setSuccessModalVisible(false);
+                if (rideId) {
+                  router.push(`/ride-request/${rideId}`);
+                }
+              }}
+            >
+              <Text style={styles.modalButtonText}>View Ride Details</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -312,5 +461,140 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+
+  /* Success Modal Styles */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: '80%',
+    maxWidth: 320,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalButton: {
+    backgroundColor: '#FFB81C',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  /* Tab Styles */
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f9f9f9',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    marginHorizontal: 5,
+  },
+  activeTab: {
+    backgroundColor: '#FFB81C',
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#000',
+  },
+
+  /* Ride Status Styles */
+  rideItem: {
+    backgroundColor: '#f9f9f9',
+    padding: 16,
+    marginVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  rideHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  rideInfo: {
+    flex: 1,
+  },
+  acceptedBadge: {
+    marginLeft: 10,
+  },
+  rideText: {
+    fontSize: 14,
+    color: '#000',
+    marginBottom: 4,
+  },
+  rideStatus: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFB81C',
+    marginBottom: 8,
+  },
+  tapHint: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginTop: 10,
+    fontStyle: 'italic',
+  },
+  statusButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statusButton: {
+    backgroundColor: '#FFB81C',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#E53935',
+  },
+  statusButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#999',
+    marginTop: 50,
   },
 });

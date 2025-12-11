@@ -7,8 +7,9 @@ import {
   ScrollView,
   ActivityIndicator,
   Switch,
+  FlatList,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 
 import { supabase } from "../../lib/supabase";
 import { getSession, customLogout } from "../lib/customAuth";
@@ -38,6 +39,19 @@ interface UserProfile {
   is_driver_approved: boolean;
 }
 
+interface Ride {
+  id: string;
+  rider_id: string;
+  origin_address: string;
+  destination_address: string;
+  status: 'requested' | 'scheduled' | 'accepted' | 'ongoing' | 'completed' | 'cancelled';
+  created_at: string;
+  origin_lat: number;
+  origin_lng: number;
+  destination_lat: number;
+  destination_lng: number;
+}
+
 export default function DriverDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -45,6 +59,8 @@ export default function DriverDashboard() {
   const [error, setError] = useState<string>("");
   const [isOnline, setIsOnline] = useState(false);
   const [earnings, setEarnings] = useState(0);
+  const [pendingRides, setPendingRides] = useState<Ride[]>([]);
+  const [loadingRides, setLoadingRides] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -90,6 +106,53 @@ export default function DriverDashboard() {
 
     fetchUserProfile();
   }, []);
+
+  // Fetch pending rides when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchPendingRides();
+      const interval = setInterval(fetchPendingRides, 5000); // Refresh every 5 seconds
+      return () => clearInterval(interval);
+    }, [])
+  );
+
+  const fetchPendingRides = async () => {
+    setLoadingRides(true);
+    try {
+      const { data, error: err } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('status', 'requested')
+        .order('created_at', { ascending: false });
+
+      if (err) throw err;
+      setPendingRides(data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch rides:', err);
+    } finally {
+      setLoadingRides(false);
+    }
+  };
+
+  const handleAcceptRide = async (rideId: string) => {
+    try {
+      const session = await getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const { error: err } = await supabase.rpc('accept_ride', {
+        p_ride_id: rideId,
+        p_driver_id: session.userId,
+      });
+
+      if (err) throw err;
+
+      // Remove from pending list and refresh
+      setPendingRides(pendingRides.filter(r => r.id !== rideId));
+      fetchPendingRides();
+    } catch (err: any) {
+      alert('Failed to accept ride: ' + err.message);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -186,14 +249,45 @@ export default function DriverDashboard() {
             </View>
 
             {/* Active Rides */}
-            <Text style={styles.sectionTitle}>Active Rides</Text>
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateEmoji}>🚗</Text>
-              <Text style={styles.emptyStateText}>No active rides</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Go online to start accepting rides
-              </Text>
-            </View>
+            <Text style={styles.sectionTitle}>Available Requests</Text>
+            {loadingRides ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator color="#FFB81C" />
+                <Text style={styles.emptyStateText}>Loading requests...</Text>
+              </View>
+            ) : pendingRides.length > 0 ? (
+              <FlatList
+                scrollEnabled={false}
+                data={pendingRides}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.rideCard}>
+                    <View style={styles.rideHeader}>
+                      <Text style={styles.rideDistance}>📍 New Request</Text>
+                      <Text style={styles.rideTime}>{new Date(item.created_at).toLocaleTimeString()}</Text>
+                    </View>
+                    <View style={styles.rideRoute}>
+                      <Text style={styles.routeFrom}>From: {item.origin_address}</Text>
+                      <Text style={styles.routeTo}>To: {item.destination_address}</Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.acceptButton}
+                      onPress={() => handleAcceptRide(item.id)}
+                    >
+                      <Text style={styles.acceptButtonText}>✓ Accept Request</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>📭</Text>
+                <Text style={styles.emptyStateText}>No pending requests</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  New ride requests will appear here
+                </Text>
+              </View>
+            )}
 
             {/* Stats */}
             <Text style={styles.sectionTitle}>Stats</Text>
@@ -521,5 +615,63 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     fontFamily: "System",
+  },
+
+  /* Ride Cards */
+  rideCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: "#FFB81C",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  rideHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  rideDistance: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFB81C",
+  },
+  rideTime: {
+    fontSize: 12,
+    color: "#999",
+  },
+  rideRoute: {
+    backgroundColor: "#F9F9F9",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  routeFrom: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 6,
+  },
+  routeTo: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
+  },
+  acceptButton: {
+    backgroundColor: "#4CAF50",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  acceptButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });
