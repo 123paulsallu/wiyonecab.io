@@ -267,26 +267,6 @@ function HomeTabContent({
               {user?.is_driver_approved ? "Ready to drive?" : "Verification pending"}
             </Text>
           </View>
-          <TouchableOpacity
-            style={[styles.logoutButton, { backgroundColor: colors.primary }]}
-            onPress={onLogout}
-          >
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* User Card */}
-        <View style={[styles.userCard, { backgroundColor: colors.card, borderLeftColor: colors.primary }]}>
-          <View style={styles.userCardContent}>
-            <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: colors.text }]}>{user?.full_name}</Text>
-              <Text style={[styles.userPhone, { color: colors.subtext }]}>{user?.phone}</Text>
-              <Text style={[styles.userEmail, { color: colors.subtext }]}>{user?.user.email}</Text>
-            </View>
-            <View style={[styles.roleBadge, { backgroundColor: colors.primary }]}>
-              <Text style={styles.roleBadgeText}>Driver</Text>
-            </View>
-          </View>
         </View>
       </View>
 
@@ -438,59 +418,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 17,
-    fontFamily: "System",
-  },
-  logoutButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 4,
-    marginLeft: 12,
-  },
-  logoutText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#000000",
-    fontFamily: "System",
-  },
-
-  /* User Card */
-  userCard: {
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-  },
-  userCardContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 4,
-    fontFamily: "System",
-  },
-  userPhone: {
-    fontSize: 17,
-    marginBottom: 2,
-    fontFamily: "System",
-  },
-  userEmail: {
-    fontSize: 15,
-    fontFamily: "System",
-  },
-  roleBadge: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  roleBadgeText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#000000",
     fontFamily: "System",
   },
 
