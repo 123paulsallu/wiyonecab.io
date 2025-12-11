@@ -521,9 +521,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     marginHorizontal: 5,
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
   },
   activeTab: {
-    backgroundColor: '#FFB81C',
+    borderBottomColor: '#FFB81C',
   },
   tabText: {
     fontSize: 16,
@@ -532,6 +534,7 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: '#000',
+    fontWeight: '700',
   },
 
   /* Ride Status Styles */
