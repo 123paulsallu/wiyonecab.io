@@ -1,22 +1,458 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Linking, ScrollView, TextInput } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import BottomTabs from '../components/BottomTabs';
 
 export default function SupportScreen() {
+  const [messageText, setMessageText] = useState('');
+
+  // WhatsApp numbers and group link
+  const SUPPORT_PHONE = '232078676869'; // Support phone number
+  const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/KkPqRkVz2E8'; // Replace with actual group link
+  const SUPPORT_EMAIL = 'support@wiyonecab.io';
+
+  const handleWhatsAppSupport = () => {
+    const message = messageText.trim() || 'Hello! I need customer support.';
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${SUPPORT_PHONE}?text=${encodedMessage}`;
+    
+    Linking.openURL(whatsappUrl).catch(() => {
+      Alert.alert(
+        'WhatsApp not available',
+        'Please install WhatsApp or copy the support number: ' + SUPPORT_PHONE.replace(/(\d{3})(\d{3})(\d{3})/, '$1-$2-$3')
+      );
+    });
+    setMessageText('');
+  };
+
+  const handleJoinGroup = () => {
+    Linking.openURL(WHATSAPP_GROUP_LINK).catch(() => {
+      Alert.alert(
+        'Cannot open link',
+        'Please visit this link to join our WhatsApp group:\n' + WHATSAPP_GROUP_LINK
+      );
+    });
+  };
+
+  const handleEmail = () => {
+    Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=WiYone CAB Support`).catch(() => {
+      Alert.alert('Email', `Send email to: ${SUPPORT_EMAIL}`);
+    });
+  };
+
+  const handleCall = () => {
+    const phoneFormatted = '+' + SUPPORT_PHONE;
+    Linking.openURL(`tel:${phoneFormatted}`).catch(() => {
+      Alert.alert('Call Support', 'Unable to open phone app. Please call: ' + phoneFormatted);
+    });
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Support</Text>
-        <Text style={styles.subtitle}>Contact support and help center.</Text>
-      </View>
-      <BottomTabs />
+    <View style={styles.mainContainer}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Customer Support</Text>
+          <Text style={styles.subtitle}>We're here to help you 24/7</Text>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          
+          {/* WhatsApp Support Card */}
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={handleWhatsAppSupport}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconContainer, styles.whatsappIcon]}>
+              <MaterialIcons name="message" size={32} color="#fff" />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>WhatsApp Support</Text>
+              <Text style={styles.actionDescription}>Chat with our support team instantly</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#FFB81C" />
+          </TouchableOpacity>
+
+          {/* Join Group Card */}
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={handleJoinGroup}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconContainer, styles.groupIcon]}>
+              <MaterialIcons name="group" size={32} color="#fff" />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Join Community Group</Text>
+              <Text style={styles.actionDescription}>Join our WhatsApp community for updates</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#FFB81C" />
+          </TouchableOpacity>
+
+          {/* Call Support Card */}
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={handleCall}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconContainer, styles.callIcon]}>
+              <MaterialIcons name="phone" size={32} color="#fff" />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Call Support</Text>
+              <Text style={styles.actionDescription}>Speak with our support team directly</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#FFB81C" />
+          </TouchableOpacity>
+
+          {/* Email Support Card */}
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={handleEmail}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconContainer, styles.emailIcon]}>
+              <MaterialIcons name="email" size={32} color="#fff" />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Email Support</Text>
+              <Text style={styles.actionDescription}>Send us an email with your query</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#FFB81C" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Message Input */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Send a Message</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type your message here..."
+              placeholderTextColor="#999"
+              multiline={true}
+              numberOfLines={4}
+              value={messageText}
+              onChangeText={setMessageText}
+            />
+            <TouchableOpacity 
+              style={[
+                styles.sendButton,
+                !messageText.trim() && styles.sendButtonDisabled
+              ]}
+              onPress={handleWhatsAppSupport}
+              disabled={!messageText.trim()}
+            >
+              <MaterialIcons 
+                name="send" 
+                size={20} 
+                color={messageText.trim() ? '#fff' : '#ccc'} 
+              />
+              <Text style={[
+                styles.sendButtonText,
+                !messageText.trim() && styles.sendButtonTextDisabled
+              ]}>
+                Send via WhatsApp
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* FAQ Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+          
+          <View style={styles.faqCard}>
+            <View style={styles.faqHeader}>
+              <MaterialIcons name="help-outline" size={20} color="#FFB81C" />
+              <Text style={styles.faqQuestion}>How do I book a ride?</Text>
+            </View>
+            <Text style={styles.faqAnswer}>
+              Go to the "Rides" tab, enter your pickup and destination, and tap "Request Ride". A driver will be assigned shortly.
+            </Text>
+          </View>
+
+          <View style={styles.faqCard}>
+            <View style={styles.faqHeader}>
+              <MaterialIcons name="help-outline" size={20} color="#FFB81C" />
+              <Text style={styles.faqQuestion}>How do I cancel a ride?</Text>
+            </View>
+            <Text style={styles.faqAnswer}>
+              You can cancel a ride from the "Ride Status" tab before a driver accepts it. Once accepted, contact support to cancel.
+            </Text>
+          </View>
+
+          <View style={styles.faqCard}>
+            <View style={styles.faqHeader}>
+              <MaterialIcons name="help-outline" size={20} color="#FFB81C" />
+              <Text style={styles.faqQuestion}>How do I contact my driver?</Text>
+            </View>
+            <Text style={styles.faqAnswer}>
+              Once a driver accepts your ride, you'll see their details including phone number. You can call or message them directly.
+            </Text>
+          </View>
+
+          <View style={styles.faqCard}>
+            <View style={styles.faqHeader}>
+              <MaterialIcons name="help-outline" size={20} color="#FFB81C" />
+              <Text style={styles.faqQuestion}>What payment methods are accepted?</Text>
+            </View>
+            <Text style={styles.faqAnswer}>
+              Currently, we accept cash payments at the end of your ride. Mobile money options coming soon!
+            </Text>
+          </View>
+        </View>
+
+        {/* Contact Info */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Contact Information</Text>
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <MaterialIcons name="phone" size={20} color="#FFB81C" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Phone</Text>
+                <Text style={styles.infoValue}>+{SUPPORT_PHONE}</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <MaterialIcons name="email" size={20} color="#FFB81C" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoValue}>{SUPPORT_EMAIL}</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <MaterialIcons name="location-on" size={20} color="#FFB81C" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Location</Text>
+                <Text style={styles.infoValue}>Kenema, Sierra Leone</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.infoRow}>
+              <MaterialIcons name="schedule" size={20} color="#FFB81C" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Hours of Operation</Text>
+                <Text style={styles.infoValue}>24/7 Available</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={{ height: 80 }} />
+      </ScrollView>
+
+      <BottomTabs active="support" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 8 },
-  subtitle: { fontSize: 14, color: '#666' },
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingBottom: 20,
+  },
+
+  /* Header */
+  header: {
+    backgroundColor: '#FFB81C',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    paddingTop: 32,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+
+  /* Sections */
+  section: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 12,
+  },
+
+  /* Action Cards */
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  whatsappIcon: {
+    backgroundColor: '#25D366',
+  },
+  groupIcon: {
+    backgroundColor: '#128C7E',
+  },
+  callIcon: {
+    backgroundColor: '#4CAF50',
+  },
+  emailIcon: {
+    backgroundColor: '#2196F3',
+  },
+  actionContent: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  actionDescription: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '500',
+  },
+
+  /* Message Input */
+  inputContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    fontSize: 14,
+    color: '#000',
+    maxHeight: 100,
+  },
+  sendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#25D366',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#ddd',
+  },
+  sendButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  sendButtonTextDisabled: {
+    color: '#999',
+  },
+
+  /* FAQ Section */
+  faqCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFB81C',
+  },
+  faqHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  faqQuestion: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000',
+    flex: 1,
+  },
+  faqAnswer: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+
+  /* Contact Info */
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#999',
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 12,
+  },
 });
