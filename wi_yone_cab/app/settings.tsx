@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Switch } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { customLogout, getSession } from '../lib/customAuth';
 import { supabase } from '../lib/supabase';
@@ -9,15 +10,22 @@ import BottomTabs from '../components/BottomTabs';
 export default function SettingsScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<any | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
   const [preferences, setPreferences] = useState({
     notifications: true,
-    darkMode: false,
     smsUpdates: true,
   });
 
   useEffect(() => {
-    const loadProfile = async () => {
+    const loadSettings = async () => {
       try {
+        // Load dark mode preference
+        const darkModePreference = await AsyncStorage.getItem('darkModeEnabled');
+        if (darkModePreference !== null) {
+          setDarkMode(JSON.parse(darkModePreference));
+        }
+
+        // Load profile
         const session = await getSession();
         if (!session) {
           router.replace('/(auth)/login');
@@ -34,10 +42,10 @@ export default function SettingsScreen() {
         }
         setProfile(data);
       } catch (err) {
-        console.warn('Error loading profile:', err);
+        console.warn('Error loading settings:', err);
       }
     };
-    loadProfile();
+    loadSettings();
   }, [router]);
 
   const handleLogout = async () => {
@@ -50,48 +58,146 @@ export default function SettingsScreen() {
     }
   };
 
-  const togglePreference = (key: keyof typeof preferences) => {
-    setPreferences((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleDarkMode = async () => {
+    try {
+      const newValue = !darkMode;
+      setDarkMode(newValue);
+      await AsyncStorage.setItem('darkModeEnabled', JSON.stringify(newValue));
+      Alert.alert(
+        'Dark Mode',
+        newValue ? 'Dark mode enabled' : 'Dark mode disabled',
+        [{ text: 'OK' }]
+      );
+    } catch (err) {
+      console.warn('Error toggling dark mode:', err);
+      Alert.alert('Error', 'Failed to update dark mode setting');
+    }
+  };
+
+  const togglePreference = async (key: 'notifications' | 'smsUpdates', value: boolean) => {
+    setPreferences((prev) => ({ ...prev, [key]: value }));
+    try {
+      const prefKey = `preference_${key}`;
+      await AsyncStorage.setItem(prefKey, JSON.stringify(value));
+    } catch (err) {
+      console.warn('Error saving preference:', err);
+    }
+  };
+
+  const themeColors = {
+    background: darkMode ? '#1a1a1a' : '#f9f9f9',
+    card: darkMode ? '#262626' : '#fff',
+    text: darkMode ? '#fff' : '#000',
+    subtext: darkMode ? '#aaa' : '#999',
+    border: darkMode ? '#333' : '#e0e0e0',
+    headerBg: darkMode ? '#0a0a0a' : '#000',
+  };
+
+  const dynamicStyles = {
+    mainContainer: {
+      ...styles.mainContainer,
+      backgroundColor: themeColors.background,
+    },
+    container: {
+      ...styles.container,
+      backgroundColor: themeColors.background,
+    },
+    header: {
+      ...styles.header,
+      backgroundColor: themeColors.headerBg,
+    },
+    profileCard: {
+      ...styles.profileCard,
+      backgroundColor: themeColors.card,
+    },
+    profileDetails: {
+      ...styles.profileDetails,
+      backgroundColor: darkMode ? '#333' : '#f5f5f5',
+    },
+    preferenceItem: {
+      ...styles.preferenceItem,
+      backgroundColor: themeColors.card,
+    },
+    menuItem: {
+      ...styles.menuItem,
+      backgroundColor: themeColors.card,
+    },
+    title: {
+      ...styles.title,
+      color: themeColors.text,
+    },
+    sectionTitle: {
+      ...styles.sectionTitle,
+      color: themeColors.text,
+    },
+    profileName: {
+      ...styles.profileName,
+      color: themeColors.text,
+    },
+    detailLabel: {
+      ...styles.detailLabel,
+      color: darkMode ? '#888' : '#888',
+    },
+    detailValue: {
+      ...styles.detailValue,
+      color: darkMode ? '#ddd' : '#333',
+    },
+    divider: {
+      ...styles.divider,
+      backgroundColor: themeColors.border,
+    },
+    preferenceName: {
+      ...styles.preferenceName,
+      color: themeColors.text,
+    },
+    preferenceDesc: {
+      ...styles.preferenceDesc,
+      color: themeColors.subtext,
+    },
+    menuItemText: {
+      ...styles.menuItemText,
+      color: themeColors.text,
+    },
   };
 
   return (
-    <View style={styles.mainContainer}>
-      <ScrollView style={styles.container}>
+    <View style={dynamicStyles.mainContainer}>
+      <ScrollView style={dynamicStyles.container}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
+        <View style={dynamicStyles.header}>
+          <Text style={dynamicStyles.title}>Settings</Text>
         </View>
 
         {/* Profile Section */}
         {profile && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account</Text>
-            <View style={styles.profileCard}>
+            <Text style={dynamicStyles.sectionTitle}>Account</Text>
+            <View style={dynamicStyles.profileCard}>
               <View style={styles.profileHeader}>
                 <View style={styles.avatar}>
                   <MaterialIcons name="account-circle" size={40} color="#FFB81C" />
                 </View>
                 <View style={styles.profileInfo}>
-                  <Text style={styles.profileName}>{profile.full_name || profile.username}</Text>
+                  <Text style={dynamicStyles.profileName}>{profile.full_name || profile.username}</Text>
                   <Text style={styles.profileRole}>{profile.role || 'Rider'}</Text>
                 </View>
               </View>
-              <View style={styles.profileDetails}>
+              <View style={dynamicStyles.profileDetails}>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Phone</Text>
-                  <Text style={styles.detailValue}>{profile.phone || '—'}</Text>
+                  <Text style={dynamicStyles.detailLabel}>Phone</Text>
+                  <Text style={dynamicStyles.detailValue}>{profile.phone || '—'}</Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={dynamicStyles.divider} />
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Email</Text>
-                  <Text style={styles.detailValue}>{profile.username || '—'}</Text>
+                  <Text style={dynamicStyles.detailLabel}>Email</Text>
+                  <Text style={dynamicStyles.detailValue}>{profile.username || '—'}</Text>
                 </View>
                 {profile.city && (
                   <>
-                    <View style={styles.divider} />
+                    <View style={dynamicStyles.divider} />
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>City</Text>
-                      <Text style={styles.detailValue}>{profile.city}</Text>
+                      <Text style={dynamicStyles.detailLabel}>City</Text>
+                      <Text style={dynamicStyles.detailValue}>{profile.city}</Text>
                     </View>
                   </>
                 )}
@@ -102,76 +208,76 @@ export default function SettingsScreen() {
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={dynamicStyles.sectionTitle}>Preferences</Text>
+
+          {/* Dark Mode */}
+          <View style={dynamicStyles.preferenceItem}>
+            <View style={styles.preferenceLeft}>
+              <MaterialIcons name="dark-mode" size={24} color="#FFB81C" />
+              <View style={styles.preferenceText}>
+                <Text style={dynamicStyles.preferenceName}>Dark Mode</Text>
+                <Text style={dynamicStyles.preferenceDesc}>Use dark theme</Text>
+              </View>
+            </View>
+            <Switch
+              value={darkMode}
+              onValueChange={toggleDarkMode}
+              trackColor={{ false: '#ccc', true: '#FFB81C' }}
+              thumbColor={darkMode ? '#FFB81C' : '#888'}
+            />
+          </View>
 
           {/* Push Notifications */}
-          <View style={styles.preferenceItem}>
+          <View style={dynamicStyles.preferenceItem}>
             <View style={styles.preferenceLeft}>
               <MaterialIcons name="notifications-active" size={24} color="#FFB81C" />
               <View style={styles.preferenceText}>
-                <Text style={styles.preferenceName}>Push Notifications</Text>
-                <Text style={styles.preferenceDesc}>Ride updates and promotions</Text>
+                <Text style={dynamicStyles.preferenceName}>Push Notifications</Text>
+                <Text style={dynamicStyles.preferenceDesc}>Ride updates and promotions</Text>
               </View>
             </View>
             <Switch
               value={preferences.notifications}
-              onValueChange={() => togglePreference('notifications')}
+              onValueChange={(value) => togglePreference('notifications', value)}
               trackColor={{ false: '#ccc', true: '#FFB81C' }}
               thumbColor={preferences.notifications ? '#FFB81C' : '#888'}
             />
           </View>
 
           {/* SMS Updates */}
-          <View style={styles.preferenceItem}>
+          <View style={dynamicStyles.preferenceItem}>
             <View style={styles.preferenceLeft}>
               <MaterialIcons name="sms" size={24} color="#FFB81C" />
               <View style={styles.preferenceText}>
-                <Text style={styles.preferenceName}>SMS Updates</Text>
-                <Text style={styles.preferenceDesc}>Receive updates via SMS</Text>
+                <Text style={dynamicStyles.preferenceName}>SMS Updates</Text>
+                <Text style={dynamicStyles.preferenceDesc}>Receive updates via SMS</Text>
               </View>
             </View>
             <Switch
               value={preferences.smsUpdates}
-              onValueChange={() => togglePreference('smsUpdates')}
+              onValueChange={(value) => togglePreference('smsUpdates', value)}
               trackColor={{ false: '#ccc', true: '#FFB81C' }}
               thumbColor={preferences.smsUpdates ? '#FFB81C' : '#888'}
-            />
-          </View>
-
-          {/* Dark Mode */}
-          <View style={styles.preferenceItem}>
-            <View style={styles.preferenceLeft}>
-              <MaterialIcons name="dark-mode" size={24} color="#FFB81C" />
-              <View style={styles.preferenceText}>
-                <Text style={styles.preferenceName}>Dark Mode</Text>
-                <Text style={styles.preferenceDesc}>Use dark theme</Text>
-              </View>
-            </View>
-            <Switch
-              value={preferences.darkMode}
-              onValueChange={() => togglePreference('darkMode')}
-              trackColor={{ false: '#ccc', true: '#FFB81C' }}
-              thumbColor={preferences.darkMode ? '#FFB81C' : '#888'}
             />
           </View>
         </View>
 
         {/* Help & Support Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Help & Support</Text>
-          <TouchableOpacity style={styles.menuItem}>
+          <Text style={dynamicStyles.sectionTitle}>Help & Support</Text>
+          <TouchableOpacity style={dynamicStyles.menuItem}>
             <MaterialIcons name="help-outline" size={24} color="#FFB81C" />
-            <Text style={styles.menuItemText}>FAQ</Text>
+            <Text style={dynamicStyles.menuItemText}>FAQ</Text>
             <MaterialIcons name="chevron-right" size={24} color="#ccc" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={dynamicStyles.menuItem}>
             <MaterialIcons name="mail-outline" size={24} color="#FFB81C" />
-            <Text style={styles.menuItemText}>Contact Support</Text>
+            <Text style={dynamicStyles.menuItemText}>Contact Support</Text>
             <MaterialIcons name="chevron-right" size={24} color="#ccc" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={dynamicStyles.menuItem}>
             <MaterialIcons name="description" size={24} color="#FFB81C" />
-            <Text style={styles.menuItemText}>Terms & Conditions</Text>
+            <Text style={dynamicStyles.menuItemText}>Terms & Conditions</Text>
             <MaterialIcons name="chevron-right" size={24} color="#ccc" />
           </TouchableOpacity>
         </View>
@@ -186,7 +292,7 @@ export default function SettingsScreen() {
 
         <View style={{ height: 80 }} />
       </ScrollView>
-      <BottomTabs />
+      <BottomTabs active="settings" />
     </View>
   );
 }

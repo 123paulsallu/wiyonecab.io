@@ -4,9 +4,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { requestRide, getRidesForRider, updateRideStatus, Ride } from '../../lib/rides';
 import { getSession } from '../../lib/customAuth';
+import { useTheme } from '../../lib/themeContext';
 import BottomTabs from '../../components/BottomTabs';
 
 export default function RideNowScreen() {
+  const { colors } = useTheme();
   const router = useRouter();
   const [originAddress, setOriginAddress] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
@@ -108,58 +110,58 @@ export default function RideNowScreen() {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
       {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'request' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'request' && styles.activeTab, activeTab === 'request' && { borderBottomColor: colors.primary }]}
           onPress={() => setActiveTab('request')}
         >
-          <Text style={[styles.tabText, activeTab === 'request' && styles.activeTabText]}>Request Ride</Text>
+          <Text style={[styles.tabText, activeTab === 'request' && styles.activeTabText, activeTab === 'request' && { color: colors.text }]}>Request Ride</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'status' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'status' && styles.activeTab, activeTab === 'status' && { borderBottomColor: colors.primary }]}
           onPress={() => setActiveTab('status')}
         >
-          <Text style={[styles.tabText, activeTab === 'status' && styles.activeTabText]}>Ride Status</Text>
+          <Text style={[styles.tabText, activeTab === 'status' && styles.activeTabText, activeTab === 'status' && { color: colors.text }]}>Ride Status</Text>
         </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         {activeTab === 'request' ? (
-          <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+          <ScrollView style={[styles.container, { backgroundColor: colors.background }]} keyboardShouldPersistTaps="handled">
             {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Request a Ride</Text>
-              <Text style={styles.subtitle}>Get a ride in minutes</Text>
+            <View style={[styles.header, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.title, { color: colors.text }]}>Request a Ride</Text>
+              <Text style={[styles.subtitle, { color: colors.subtext }]}>Get a ride in minutes</Text>
             </View>
 
           {/* Pickup Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Pickup Location</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="location-on" size={20} color="#FFB81C" />
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Pickup Location</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <MaterialIcons name="location-on" size={20} color={colors.primary} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 placeholder="Enter pickup address"
                 value={originAddress}
                 onChangeText={setOriginAddress}
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.subtext}
               />
             </View>
           </View>
 
           {/* Destination Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Destination</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="place" size={20} color="#FFB81C" />
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Destination</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <MaterialIcons name="place" size={20} color={colors.primary} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 placeholder="Where are you going?"
                 value={destinationAddress}
                 onChangeText={setDestinationAddress}
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.subtext}
               />
             </View>
           </View>
@@ -167,25 +169,25 @@ export default function RideNowScreen() {
           {/* Scheduled Ride Section */}
           {scheduled === 'true' && (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Schedule Ride</Text>
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="event" size={20} color="#FFB81C" />
+              <Text style={[styles.sectionLabel, { color: colors.text }]}>Schedule Ride</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <MaterialIcons name="event" size={20} color={colors.primary} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="Date (YYYY-MM-DD)"
                   value={scheduledDate}
                   onChangeText={setScheduledDate}
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.subtext}
                 />
               </View>
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="schedule" size={20} color="#FFB81C" />
+              <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <MaterialIcons name="schedule" size={20} color={colors.primary} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="Time (HH:MM)"
                   value={scheduledTime}
                   onChangeText={setScheduledTime}
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.subtext}
                 />
               </View>
             </View>
@@ -193,16 +195,16 @@ export default function RideNowScreen() {
 
           {/* Request Button */}
           <TouchableOpacity
-            style={[styles.button, submitting && styles.buttonDisabled]}
+            style={[styles.button, submitting && styles.buttonDisabled, { backgroundColor: colors.primary }]}
             onPress={handleRequest}
             disabled={submitting}
           >
             {submitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.text} />
             ) : (
               <>
-                <MaterialIcons name="local-taxi" size={20} color="#fff" />
-                <Text style={styles.buttonText}>Request Ride</Text>
+                <MaterialIcons name="local-taxi" size={20} color={colors.text} />
+                <Text style={[styles.buttonText, { color: colors.text }]}>Request Ride</Text>
               </>
             )}
           </TouchableOpacity>
@@ -210,17 +212,17 @@ export default function RideNowScreen() {
           <View style={{ height: 80 }} />
         </ScrollView>
         ) : (
-          <View style={styles.container}>
-            <Text style={styles.title}>Ride Status</Text>
+          <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <Text style={[styles.title, { color: colors.text }]}>Ride Status</Text>
             {loadingRides ? (
-              <ActivityIndicator size="large" color="#FFB81C" />
+              <ActivityIndicator size="large" color={colors.primary} />
             ) : (
               <FlatList
                 data={rides}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                   <TouchableOpacity 
-                    style={styles.rideItem}
+                    style={[styles.rideItem, { backgroundColor: colors.card, borderColor: colors.border }]}
                     onPress={() => {
                       if (item.status === 'accepted' && item.driver_id) {
                         router.push(`/driver-details?driverId=${item.driver_id}`);
@@ -228,50 +230,50 @@ export default function RideNowScreen() {
                     }}
                     activeOpacity={item.status === 'accepted' ? 0.7 : 1}
                   >
-                    <View style={styles.rideHeader}>
+                    <View style={[styles.rideHeader, { borderBottomColor: colors.border }]}>
                       <View style={styles.rideInfo}>
-                        <Text style={styles.rideText}>From: {item.origin_address}</Text>
-                        <Text style={styles.rideText}>To: {item.destination_address}</Text>
+                        <Text style={[styles.rideText, { color: colors.text }]}>From: {item.origin_address}</Text>
+                        <Text style={[styles.rideText, { color: colors.text }]}>To: {item.destination_address}</Text>
                       </View>
                       {item.status === 'accepted' && (
                         <View style={styles.acceptedBadge}>
-                          <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
+                          <MaterialIcons name="check-circle" size={24} color={colors.success} />
                         </View>
                       )}
                     </View>
-                    <Text style={styles.rideStatus}>Status: {item.status}</Text>
+                    <Text style={[styles.rideStatus, { color: colors.primary }]}>Status: {item.status}</Text>
                     <View style={styles.statusButtons}>
                       {item.status === 'requested' && (
                         <TouchableOpacity
-                          style={styles.statusButton}
+                          style={[styles.statusButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleStatusUpdate(item.id, 'ongoing')}
                         >
-                          <Text style={styles.statusButtonText}>Mark as Ongoing</Text>
+                          <Text style={[styles.statusButtonText, { color: colors.text }]}>Mark as Ongoing</Text>
                         </TouchableOpacity>
                       )}
                       {item.status === 'ongoing' && (
                         <TouchableOpacity
-                          style={styles.statusButton}
+                          style={[styles.statusButton, { backgroundColor: colors.primary }]}
                           onPress={() => handleStatusUpdate(item.id, 'completed')}
                         >
-                          <Text style={styles.statusButtonText}>Mark as Completed</Text>
+                          <Text style={[styles.statusButtonText, { color: colors.text }]}>Mark as Completed</Text>
                         </TouchableOpacity>
                       )}
                       {item.status !== 'completed' && item.status !== 'cancelled' && (
                         <TouchableOpacity
-                          style={[styles.statusButton, styles.cancelButton]}
+                          style={[styles.statusButton, styles.cancelButton, { backgroundColor: colors.error }]}
                           onPress={() => handleStatusUpdate(item.id, 'cancelled')}
                         >
-                          <Text style={styles.statusButtonText}>Cancel Ride</Text>
+                          <Text style={[styles.statusButtonText, { color: colors.text }]}>Cancel Ride</Text>
                         </TouchableOpacity>
                       )}
                     </View>
                     {item.status === 'accepted' && (
-                      <Text style={styles.tapHint}>Tap to view driver details</Text>
+                      <Text style={[styles.tapHint, { color: colors.success }]}>Tap to view driver details</Text>
                     )}
                   </TouchableOpacity>
                 )}
-                ListEmptyComponent={<Text style={styles.emptyText}>No rides found</Text>}
+                ListEmptyComponent={<Text style={[styles.emptyText, { color: colors.subtext }]}>No rides found</Text>}
               />
             )}
           </View>
@@ -288,14 +290,14 @@ export default function RideNowScreen() {
         onRequestClose={() => setSuccessModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <MaterialIcons name="check-circle" size={64} color="#FFB81C" />
-            <Text style={styles.modalTitle}>Ride Requested Successfully!</Text>
-            <Text style={styles.modalMessage}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <MaterialIcons name="check-circle" size={64} color={colors.primary} />
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Ride Requested Successfully!</Text>
+            <Text style={[styles.modalMessage, { color: colors.subtext }]}>
               Your ride has been requested. A driver will be assigned shortly.
             </Text>
             <TouchableOpacity
-              style={styles.modalButton}
+              style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={() => {
                 setSuccessModalVisible(false);
                 if (rideId) {
@@ -303,7 +305,7 @@ export default function RideNowScreen() {
                 }
               }}
             >
-              <Text style={styles.modalButtonText}>View Ride Details</Text>
+              <Text style={[styles.modalButtonText, { color: colors.text }]}>View Ride Details</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -471,7 +473,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -481,19 +482,16 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
   modalMessage: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
   },
   modalButton: {
-    backgroundColor: '#FFB81C',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -501,7 +499,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonText: {
-    color: '#000',
     fontSize: 16,
     fontWeight: '700',
   },

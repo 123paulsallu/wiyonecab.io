@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getRidesForRider, Ride } from '../lib/rides';
+import { useTheme } from '../lib/themeContext';
 import BottomTabs from '../components/BottomTabs';
 
 export default function RideHistoryScreen() {
+  const { colors } = useTheme();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,30 +55,30 @@ export default function RideHistoryScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#FFB81C" />
-        <Text style={styles.loadingText}>Loading ride history...</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.subtext }]}>Loading ride history...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.mainContainer}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Ride History</Text>
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Ride History</Text>
         <TouchableOpacity 
           style={styles.refreshButton}
           onPress={handleRefresh}
         >
-          <MaterialIcons name="refresh" size={24} color="#FFB81C" />
+          <MaterialIcons name="refresh" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
       {rides.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <MaterialIcons name="history" size={64} color="#ddd" />
-          <Text style={styles.emptyText}>No completed rides yet</Text>
-          <Text style={styles.emptySubtext}>Your completed rides will appear here</Text>
+          <MaterialIcons name="history" size={64} color={colors.border} />
+          <Text style={[styles.emptyText, { color: colors.subtext }]}>No completed rides yet</Text>
+          <Text style={[styles.emptySubtext, { color: colors.subtext }]}>Your completed rides will appear here</Text>
         </View>
       ) : (
         <FlatList
@@ -86,43 +88,43 @@ export default function RideHistoryScreen() {
           onRefresh={handleRefresh}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
-            <View style={styles.rideCard}>
-              <View style={styles.rideHeader}>
+            <View style={[styles.rideCard, { backgroundColor: colors.card }]}>
+              <View style={[styles.rideHeader, { backgroundColor: colors.secondary, borderBottomColor: colors.border }]}>
                 <View style={styles.statusBadge}>
-                  <MaterialIcons name="check-circle" size={20} color="#4CAF50" />
-                  <Text style={styles.completedText}>Completed</Text>
+                  <MaterialIcons name="check-circle" size={20} color={colors.success} />
+                  <Text style={[styles.completedText, { color: colors.success }]}>Completed</Text>
                 </View>
-                <Text style={styles.dateText}>{formatDate(item.completed_at || item.updated_at)}</Text>
+                <Text style={[styles.dateText, { color: colors.subtext }]}>{formatDate(item.completed_at || item.updated_at)}</Text>
               </View>
 
               <View style={styles.rideDetails}>
                 <View style={styles.locationRow}>
-                  <MaterialIcons name="location-on" size={20} color="#FFB81C" />
+                  <MaterialIcons name="location-on" size={20} color={colors.primary} />
                   <View style={styles.locationInfo}>
-                    <Text style={styles.label}>Pickup</Text>
-                    <Text style={styles.address}>{item.origin_address}</Text>
+                    <Text style={[styles.label, { color: colors.subtext }]}>Pickup</Text>
+                    <Text style={[styles.address, { color: colors.text }]}>{item.origin_address}</Text>
                   </View>
                 </View>
 
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.locationRow}>
-                  <MaterialIcons name="location-on" size={20} color="#4CAF50" />
+                  <MaterialIcons name="location-on" size={20} color={colors.success} />
                   <View style={styles.locationInfo}>
-                    <Text style={styles.label}>Dropoff</Text>
-                    <Text style={styles.address}>{item.destination_address}</Text>
+                    <Text style={[styles.label, { color: colors.subtext }]}>Dropoff</Text>
+                    <Text style={[styles.address, { color: colors.text }]}>{item.destination_address}</Text>
                   </View>
                 </View>
               </View>
 
-              <View style={styles.rideFooter}>
+              <View style={[styles.rideFooter, { borderTopColor: colors.border }]}>
                 <View style={styles.infoItem}>
-                  <MaterialIcons name="directions-car" size={16} color="#666" />
-                  <Text style={styles.infoText}>{item.vehicle_type || 'Car'}</Text>
+                  <MaterialIcons name="directions-car" size={16} color={colors.subtext} />
+                  <Text style={[styles.infoText, { color: colors.subtext }]}>{item.vehicle_type || 'Car'}</Text>
                 </View>
                 <View style={styles.infoItem}>
-                  <MaterialIcons name="timer" size={16} color="#666" />
-                  <Text style={styles.infoText}>Trip Completed</Text>
+                  <MaterialIcons name="timer" size={16} color={colors.subtext} />
+                  <Text style={[styles.infoText, { color: colors.subtext }]}>Trip Completed</Text>
                 </View>
               </View>
             </View>
@@ -138,18 +140,15 @@ export default function RideHistoryScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
     fontWeight: '600',
   },
 
@@ -160,14 +159,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000',
   },
   refreshButton: {
     padding: 8,
@@ -183,12 +179,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#999',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#bbb',
     marginTop: 8,
     textAlign: 'center',
   },
@@ -202,7 +196,6 @@ const styles = StyleSheet.create({
 
   /* Ride Card */
   rideCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     marginBottom: 12,
     overflow: 'hidden',
@@ -220,9 +213,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#f9f9f9',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -232,11 +223,9 @@ const styles = StyleSheet.create({
   completedText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#4CAF50',
   },
   dateText: {
     fontSize: 12,
-    color: '#999',
     fontWeight: '600',
   },
 
@@ -256,19 +245,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#999',
     marginBottom: 4,
   },
   address: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
     lineHeight: 18,
   },
 
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
     marginVertical: 12,
     marginLeft: 28,
   },
@@ -280,8 +266,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    backgroundColor: '#fafafa',
   },
   infoItem: {
     flexDirection: 'row',
@@ -290,7 +274,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 12,
-    color: '#666',
     fontWeight: '600',
   },
 });

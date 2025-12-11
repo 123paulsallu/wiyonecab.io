@@ -3,9 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Lin
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getDriverProfile } from '../../lib/rides';
+import { useTheme } from '../../lib/themeContext';
 import BottomTabs from '../../components/BottomTabs';
 
 export default function DriverDetailsScreen() {
+  const { colors } = useTheme();
   const router = useRouter();
   const { driverId } = useLocalSearchParams();
   const [driver, setDriver] = useState<any | null>(null);
@@ -75,20 +77,20 @@ export default function DriverDetailsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#FFB81C" />
-        <Text style={styles.loadingText}>Loading driver details...</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.subtext }]}>Loading driver details...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centerContainer}>
-        <MaterialIcons name="error-outline" size={64} color="#E53935" />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-          <Text style={styles.buttonText}>Go Back</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <MaterialIcons name="error-outline" size={64} color={colors.error} />
+        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
+          <Text style={[styles.buttonText, { color: colors.text }]}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -96,62 +98,62 @@ export default function DriverDetailsScreen() {
 
   if (!driver) {
     return (
-      <View style={styles.centerContainer}>
-        <MaterialIcons name="person-outline" size={64} color="#999" />
-        <Text style={styles.errorText}>Driver information not available</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-          <Text style={styles.buttonText}>Go Back</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <MaterialIcons name="person-outline" size={64} color={colors.subtext} />
+        <Text style={[styles.errorText, { color: colors.subtext }]}>Driver information not available</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={() => router.back()}>
+          <Text style={[styles.buttonText, { color: colors.text }]}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
       {/* Back Button */}
       <TouchableOpacity 
-        style={styles.backButton}
+        style={[styles.backButton, { backgroundColor: colors.card }]}
         onPress={() => router.back()}
       >
-        <MaterialIcons name="arrow-back" size={24} color="#000" />
+        <MaterialIcons name="arrow-back" size={24} color={colors.text} />
       </TouchableOpacity>
 
       {/* Driver Profile Content */}
       <View style={styles.content}>
         {/* Profile Header */}
         <View style={styles.profileSection}>
-          <MaterialIcons name="account-circle" size={70} color="#FFB81C" />
-          <View style={styles.statusBadge}>
-            <MaterialIcons name="check-circle" size={20} color="#4CAF50" />
+          <MaterialIcons name="account-circle" size={70} color={colors.primary} />
+          <View style={[styles.statusBadge, { backgroundColor: colors.card }]}>
+            <MaterialIcons name="check-circle" size={20} color={colors.success} />
           </View>
         </View>
 
         {/* Driver Info */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Full Name</Text>
-            <Text style={styles.value}>{driver?.full_name || 'N/A'}</Text>
+        <View style={[styles.infoSection, { backgroundColor: colors.card }]}>
+          <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.label, { color: colors.subtext }]}>Full Name</Text>
+            <Text style={[styles.value, { color: colors.text }]}>{driver?.full_name || 'N/A'}</Text>
           </View>
           
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Username</Text>
-            <Text style={styles.value}>{driver?.username || 'N/A'}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.label, { color: colors.subtext }]}>Username</Text>
+            <Text style={[styles.value, { color: colors.text }]}>{driver?.username || 'N/A'}</Text>
           </View>
           
-          <View style={styles.infoRow}>
-            <MaterialIcons name="phone" size={18} color="#FFB81C" />
+          <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+            <MaterialIcons name="phone" size={18} color={colors.primary} />
             <View style={styles.phoneCol}>
-              <Text style={styles.label}>Phone</Text>
-              <Text style={styles.value}>{driver?.phone || 'N/A'}</Text>
+              <Text style={[styles.label, { color: colors.subtext }]}>Phone</Text>
+              <Text style={[styles.value, { color: colors.text }]}>{driver?.phone || 'N/A'}</Text>
             </View>
           </View>
 
           {driver?.city && (
             <View style={styles.infoRow}>
-              <MaterialIcons name="location-on" size={18} color="#FFB81C" />
+              <MaterialIcons name="location-on" size={18} color={colors.primary} />
               <View style={styles.phoneCol}>
-                <Text style={styles.label}>City</Text>
-                <Text style={styles.value}>{driver.city}</Text>
+                <Text style={[styles.label, { color: colors.subtext }]}>City</Text>
+                <Text style={[styles.value, { color: colors.text }]}>{driver.city}</Text>
               </View>
             </View>
           )}
@@ -177,14 +179,14 @@ export default function DriverDetailsScreen() {
         </View>
 
         {/* Trust Info */}
-        <View style={styles.trustSection}>
+        <View style={[styles.trustSection, { backgroundColor: colors.card }]}>
           <View style={styles.trustItem}>
-            <MaterialIcons name="verified-user" size={18} color="#4CAF50" />
-            <Text style={styles.trustText}>Verified driver</Text>
+            <MaterialIcons name="verified-user" size={18} color={colors.success} />
+            <Text style={[styles.trustText, { color: colors.subtext }]}>Verified driver</Text>
           </View>
           <View style={styles.trustItem}>
-            <MaterialIcons name="shield" size={18} color="#2196F3" />
-            <Text style={styles.trustText}>All rides insured</Text>
+            <MaterialIcons name="shield" size={18} color={colors.primary} />
+            <Text style={[styles.trustText, { color: colors.subtext }]}>All rides insured</Text>
           </View>
         </View>
       </View>
@@ -197,13 +199,11 @@ export default function DriverDetailsScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     paddingHorizontal: 20,
   },
   
@@ -212,7 +212,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 16,
@@ -237,14 +236,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 80,
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 2,
   },
 
   /* Info Section */
   infoSection: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -255,7 +252,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   phoneCol: {
     flex: 1,
@@ -264,13 +260,11 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
     marginBottom: 2,
   },
   value: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#000',
   },
 
   /* Button Section */
@@ -300,7 +294,6 @@ const styles = StyleSheet.create({
 
   /* Trust Section */
   trustSection: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
     gap: 10,
@@ -312,7 +305,6 @@ const styles = StyleSheet.create({
   },
   trustText: {
     fontSize: 13,
-    color: '#666',
     fontWeight: '500',
   },
 
@@ -320,18 +312,15 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
     fontWeight: '600',
   },
   errorText: {
     fontSize: 16,
-    color: '#E53935',
     fontWeight: '600',
     marginTop: 12,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#FFB81C',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -341,6 +330,5 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
   },
 });

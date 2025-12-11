@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Linking, ScrollView, TextInput } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../lib/themeContext';
 import BottomTabs from '../components/BottomTabs';
 
 export default function SupportScreen() {
+  const { colors } = useTheme();
   const [messageText, setMessageText] = useState('');
 
   // WhatsApp numbers and group link
@@ -48,21 +50,21 @@ export default function SupportScreen() {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Customer Support</Text>
-          <Text style={styles.subtitle}>We're here to help you 24/7</Text>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Customer Support</Text>
+          <Text style={[styles.subtitle, { color: colors.subtext }]}>We're here to help you 24/7</Text>
         </View>
 
         {/* Quick Actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
           
           {/* WhatsApp Support Card */}
           <TouchableOpacity 
-            style={styles.actionCard}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={handleWhatsAppSupport}
             activeOpacity={0.7}
           >
@@ -70,15 +72,15 @@ export default function SupportScreen() {
               <MaterialIcons name="message" size={32} color="#fff" />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>WhatsApp Support</Text>
-              <Text style={styles.actionDescription}>Chat with our support team instantly</Text>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>WhatsApp Support</Text>
+              <Text style={[styles.actionDescription, { color: colors.subtext }]}>Chat with our support team instantly</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color="#FFB81C" />
+            <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
           </TouchableOpacity>
 
           {/* Join Group Card */}
           <TouchableOpacity 
-            style={styles.actionCard}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={handleJoinGroup}
             activeOpacity={0.7}
           >
@@ -86,15 +88,15 @@ export default function SupportScreen() {
               <MaterialIcons name="group" size={32} color="#fff" />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Join Community Group</Text>
-              <Text style={styles.actionDescription}>Join our WhatsApp community for updates</Text>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Join Community Group</Text>
+              <Text style={[styles.actionDescription, { color: colors.subtext }]}>Join our WhatsApp community for updates</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color="#FFB81C" />
+            <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
           </TouchableOpacity>
 
           {/* Call Support Card */}
           <TouchableOpacity 
-            style={styles.actionCard}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={handleCall}
             activeOpacity={0.7}
           >
@@ -102,15 +104,15 @@ export default function SupportScreen() {
               <MaterialIcons name="phone" size={32} color="#fff" />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Call Support</Text>
-              <Text style={styles.actionDescription}>Speak with our support team directly</Text>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Call Support</Text>
+              <Text style={[styles.actionDescription, { color: colors.subtext }]}>Speak with our support team directly</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color="#FFB81C" />
+            <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
           </TouchableOpacity>
 
           {/* Email Support Card */}
           <TouchableOpacity 
-            style={styles.actionCard}
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={handleEmail}
             activeOpacity={0.7}
           >
@@ -118,21 +120,21 @@ export default function SupportScreen() {
               <MaterialIcons name="email" size={32} color="#fff" />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Email Support</Text>
-              <Text style={styles.actionDescription}>Send us an email with your query</Text>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Email Support</Text>
+              <Text style={[styles.actionDescription, { color: colors.subtext }]}>Send us an email with your query</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color="#FFB81C" />
+            <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Message Input */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Send a Message</Text>
-          <View style={styles.inputContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Send a Message</Text>
+          <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="Type your message here..."
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.subtext}
               multiline={true}
               numberOfLines={4}
               value={messageText}
@@ -141,7 +143,8 @@ export default function SupportScreen() {
             <TouchableOpacity 
               style={[
                 styles.sendButton,
-                !messageText.trim() && styles.sendButtonDisabled
+                !messageText.trim() && styles.sendButtonDisabled,
+                { backgroundColor: colors.primary }
               ]}
               onPress={handleWhatsAppSupport}
               disabled={!messageText.trim()}
@@ -153,7 +156,8 @@ export default function SupportScreen() {
               />
               <Text style={[
                 styles.sendButtonText,
-                !messageText.trim() && styles.sendButtonTextDisabled
+                !messageText.trim() && styles.sendButtonTextDisabled,
+                { color: messageText.trim() ? '#fff' : colors.subtext }
               ]}>
                 Send via WhatsApp
               </Text>
@@ -163,44 +167,44 @@ export default function SupportScreen() {
 
         {/* FAQ Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Frequently Asked Questions</Text>
           
-          <View style={styles.faqCard}>
+          <View style={[styles.faqCard, { backgroundColor: colors.card, borderLeftColor: colors.primary }]}>
             <View style={styles.faqHeader}>
-              <MaterialIcons name="help-outline" size={20} color="#FFB81C" />
-              <Text style={styles.faqQuestion}>How do I book a ride?</Text>
+              <MaterialIcons name="help-outline" size={20} color={colors.primary} />
+              <Text style={[styles.faqQuestion, { color: colors.text }]}>How do I book a ride?</Text>
             </View>
-            <Text style={styles.faqAnswer}>
+            <Text style={[styles.faqAnswer, { color: colors.subtext }]}>
               Go to the "Rides" tab, enter your pickup and destination, and tap "Request Ride". A driver will be assigned shortly.
             </Text>
           </View>
 
-          <View style={styles.faqCard}>
+          <View style={[styles.faqCard, { backgroundColor: colors.card, borderLeftColor: colors.primary }]}>
             <View style={styles.faqHeader}>
-              <MaterialIcons name="help-outline" size={20} color="#FFB81C" />
-              <Text style={styles.faqQuestion}>How do I cancel a ride?</Text>
+              <MaterialIcons name="help-outline" size={20} color={colors.primary} />
+              <Text style={[styles.faqQuestion, { color: colors.text }]}>How do I cancel a ride?</Text>
             </View>
-            <Text style={styles.faqAnswer}>
+            <Text style={[styles.faqAnswer, { color: colors.subtext }]}>
               You can cancel a ride from the "Ride Status" tab before a driver accepts it. Once accepted, contact support to cancel.
             </Text>
           </View>
 
-          <View style={styles.faqCard}>
+          <View style={[styles.faqCard, { backgroundColor: colors.card, borderLeftColor: colors.primary }]}>
             <View style={styles.faqHeader}>
-              <MaterialIcons name="help-outline" size={20} color="#FFB81C" />
-              <Text style={styles.faqQuestion}>How do I contact my driver?</Text>
+              <MaterialIcons name="help-outline" size={20} color={colors.primary} />
+              <Text style={[styles.faqQuestion, { color: colors.text }]}>How do I contact my driver?</Text>
             </View>
-            <Text style={styles.faqAnswer}>
+            <Text style={[styles.faqAnswer, { color: colors.subtext }]}>
               Once a driver accepts your ride, you'll see their details including phone number. You can call or message them directly.
             </Text>
           </View>
 
-          <View style={styles.faqCard}>
+          <View style={[styles.faqCard, { backgroundColor: colors.card, borderLeftColor: colors.primary }]}>
             <View style={styles.faqHeader}>
-              <MaterialIcons name="help-outline" size={20} color="#FFB81C" />
-              <Text style={styles.faqQuestion}>What payment methods are accepted?</Text>
+              <MaterialIcons name="help-outline" size={20} color={colors.primary} />
+              <Text style={[styles.faqQuestion, { color: colors.text }]}>What payment methods are accepted?</Text>
             </View>
-            <Text style={styles.faqAnswer}>
+            <Text style={[styles.faqAnswer, { color: colors.subtext }]}>
               Currently, we accept cash payments at the end of your ride. Mobile money options coming soon!
             </Text>
           </View>
@@ -208,43 +212,43 @@ export default function SupportScreen() {
 
         {/* Contact Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact Information</Text>
-          <View style={styles.infoCard}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact Information</Text>
+          <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
             <View style={styles.infoRow}>
-              <MaterialIcons name="phone" size={20} color="#FFB81C" />
+              <MaterialIcons name="phone" size={20} color={colors.primary} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Phone</Text>
-                <Text style={styles.infoValue}>+{SUPPORT_PHONE}</Text>
+                <Text style={[styles.infoLabel, { color: colors.subtext }]}>Phone</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>+{SUPPORT_PHONE}</Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <View style={styles.infoRow}>
-              <MaterialIcons name="email" size={20} color="#FFB81C" />
+              <MaterialIcons name="email" size={20} color={colors.primary} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Email</Text>
-                <Text style={styles.infoValue}>{SUPPORT_EMAIL}</Text>
+                <Text style={[styles.infoLabel, { color: colors.subtext }]}>Email</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{SUPPORT_EMAIL}</Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <View style={styles.infoRow}>
-              <MaterialIcons name="location-on" size={20} color="#FFB81C" />
+              <MaterialIcons name="location-on" size={20} color={colors.primary} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Location</Text>
-                <Text style={styles.infoValue}>Kenema, Sierra Leone</Text>
+                <Text style={[styles.infoLabel, { color: colors.subtext }]}>Location</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>Kenema, Sierra Leone</Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <View style={styles.infoRow}>
-              <MaterialIcons name="schedule" size={20} color="#FFB81C" />
+              <MaterialIcons name="schedule" size={20} color={colors.primary} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Hours of Operation</Text>
-                <Text style={styles.infoValue}>24/7 Available</Text>
+                <Text style={[styles.infoLabel, { color: colors.subtext }]}>Hours of Operation</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>24/7 Available</Text>
               </View>
             </View>
           </View>
@@ -261,7 +265,6 @@ export default function SupportScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   container: {
     flex: 1,
@@ -276,16 +279,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 24,
     paddingTop: 32,
+    borderBottomWidth: 1,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#333',
     fontWeight: '500',
   },
 
@@ -297,7 +299,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
     marginBottom: 12,
   },
 
@@ -305,10 +306,10 @@ const styles = StyleSheet.create({
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -341,21 +342,19 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
     marginBottom: 2,
   },
   actionDescription: {
     fontSize: 12,
-    color: '#999',
     fontWeight: '500',
   },
 
   /* Message Input */
   inputContainer: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -369,14 +368,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     fontSize: 14,
-    color: '#000',
     maxHeight: 100,
   },
   sendButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#25D366',
     paddingVertical: 12,
     borderRadius: 8,
     gap: 8,
@@ -387,7 +384,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#fff',
   },
   sendButtonTextDisabled: {
     color: '#999',
@@ -395,12 +391,10 @@ const styles = StyleSheet.create({
 
   /* FAQ Section */
   faqCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
     borderLeftWidth: 4,
-    borderLeftColor: '#FFB81C',
   },
   faqHeader: {
     flexDirection: 'row',
@@ -411,18 +405,15 @@ const styles = StyleSheet.create({
   faqQuestion: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#000',
     flex: 1,
   },
   faqAnswer: {
     fontSize: 13,
-    color: '#666',
     lineHeight: 18,
   },
 
   /* Contact Info */
   infoCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -442,17 +433,14 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#999',
     marginBottom: 2,
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
   },
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
     marginVertical: 12,
   },
 });
