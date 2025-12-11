@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../lib/themeContext';
 
 const TABS = [
   { key: 'home', label: 'Home', icon: 'home', to: '/' },
@@ -12,6 +13,7 @@ const TABS = [
 ];
 
 export default function BottomTabs({ active }: { active?: string }) {
+  const { colors } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const [scaleAnims] = React.useState(TABS.map(() => new Animated.Value(1)));
@@ -39,7 +41,7 @@ export default function BottomTabs({ active }: { active?: string }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
       {TABS.map((t, index) => {
         const isActive = activeKey === t.key;
         return (
@@ -53,10 +55,10 @@ export default function BottomTabs({ active }: { active?: string }) {
               <MaterialIcons
                 name={t.icon as any}
                 size={24}
-                color={isActive ? '#FFB81C' : '#666666'}
+                color={isActive ? colors.primary : colors.subtext}
               />
-              <Text style={[styles.label, isActive && styles.labelActive]}>{t.label}</Text>
-              {isActive && <View style={styles.underline} />}
+              <Text style={[styles.label, { color: isActive ? colors.primary : colors.subtext }, isActive && styles.labelActive]}>{t.label}</Text>
+              {isActive && <View style={[styles.underline, { backgroundColor: colors.primary }]} />}
             </Animated.View>
           </TouchableOpacity>
         );
@@ -72,8 +74,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
   },
   tabWrapper: {
     flex: 1,
@@ -86,16 +86,13 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    color: '#666',
     marginTop: 2,
   },
   labelActive: {
-    color: '#FFB81C',
     fontWeight: '700',
   },
   underline: {
     height: 3,
-    backgroundColor: '#FFB81C',
     borderRadius: 2,
     marginTop: 4,
     width: 24,
