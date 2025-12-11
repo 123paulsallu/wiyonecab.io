@@ -1,22 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { getRidesForRider, Ride } from '../lib/rides';
+import { getSession } from '../lib/customAuth';
 import { useTheme } from '../lib/themeContext';
 import BottomTabs from '../components/BottomTabs';
 
 export default function RideHistoryScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadCompletedRides();
-    // Refresh every 10 seconds to get latest completed rides
-    const interval = setInterval(loadCompletedRides, 10000);
-    return () => clearInterval(interval);
+    checkAuthAndLoad();
   }, []);
+
+  const checkAuthAndLoad = async () => {
+    try {
+      const session = await getSession();
+      if (!session) {
+        router.replace('/(auth)/login');
+        return;
+      }
+      await loadCompletedRides();
+      // Refresh every 10 seconds to get latest completed rides
+      const interval = setInterval(loadCompletedRides, 10000);
+      return () => clearInterval(interval);
+    } catch (err: any) {
+      console.error('Auth check error:', err);
+    }
+  };
 
   const loadCompletedRides = async () => {
     try {
@@ -26,7 +42,11 @@ export default function RideHistoryScreen() {
       setRides(completedRides);
     } catch (err: any) {
       console.error('Error loading ride history:', err);
-      Alert.alert('Error', 'Failed to load ride history');
+      if (err.message === 'Not authenticated') {
+        router.replace('/(auth)/login');
+      } else {
+        Alert.alert('Error', 'Failed to load ride history');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
