@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getRide, cancelRide, getDriverProfile } from '../../lib/rides';
+import { getRide, cancelRide, getDriverProfile, updateRideStatus } from '../../lib/rides';
 
 export default function RideRequestStatus() {
   const { id } = useLocalSearchParams();
@@ -12,6 +12,7 @@ export default function RideRequestStatus() {
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
   const [driverProfile, setDriverProfile] = useState<any | null>(null);
+  const [updating, setUpdating] = useState(false);
 
   const fetchRide = async () => {
     try {
@@ -51,13 +52,75 @@ export default function RideRequestStatus() {
   }, []);
 
   const handleCancel = async () => {
+    Alert.alert('Cancel Ride', 'Are you sure you want to cancel this ride?', [
+      {
+        text: 'No',
+        onPress: () => {},
+        style: 'cancel',
+      },
+      {
+        text: 'Yes, Cancel',
+        onPress: async () => {
+          try {
+            setUpdating(true);
+            await cancelRide(rideId);
+            Alert.alert('Cancelled', 'Ride has been cancelled', [
+              {
+                text: 'OK',
+                onPress: () => router.replace('/(rider)'),
+              },
+            ]);
+          } catch (err: any) {
+            Alert.alert('Cancel failed', err?.message || String(err));
+          } finally {
+            setUpdating(false);
+          }
+        },
+        style: 'destructive',
+      },
+    ]);
+  };
+
+  const handleMarkOngoing = async () => {
     try {
-      await cancelRide(rideId);
-      Alert.alert('Cancelled', 'Ride cancelled');
-      router.replace('/(rider)');
+      setUpdating(true);
+      await updateRideStatus(rideId, 'ongoing');
+      Alert.alert('Updated', 'Ride marked as ongoing');
+      await fetchRide();
     } catch (err: any) {
-      Alert.alert('Cancel failed', err?.message || String(err));
+      Alert.alert('Failed', err?.message || 'Failed to update status');
+    } finally {
+      setUpdating(false);
     }
+  };
+
+  const handleMarkCompleted = async () => {
+    Alert.alert('Complete Ride', 'Mark this ride as completed?', [
+      {
+        text: 'No',
+        onPress: () => {},
+        style: 'cancel',
+      },
+      {
+        text: 'Yes, Complete',
+        onPress: async () => {
+          try {
+            setUpdating(true);
+            await updateRideStatus(rideId, 'completed');
+            Alert.alert('Completed', 'Ride has been completed', [
+              {
+                text: 'OK',
+                onPress: () => router.replace('/(rider)'),
+              },
+            ]);
+          } catch (err: any) {
+            Alert.alert('Failed', err?.message || 'Failed to complete ride');
+          } finally {
+            setUpdating(false);
+          }
+        },
+      },
+    ]);
   };
 
   const handleCallDriver = () => {
@@ -94,10 +157,18 @@ export default function RideRequestStatus() {
       
       {/* Status Badge */}
       <View style={[styles.statusBadge, 
-        ride?.status === 'accepted' ? styles.statusAccepted : styles.statusPending
+        ride?.status === 'accepted' ? styles.statusAccepted : 
+        ride?.status === 'ongoing' ? styles.statusOngoing :
+        ride?.status === 'completed' ? styles.statusCompleted :
+        ride?.status === 'cancelled' ? styles.statusCancelled :
+        styles.statusPending
       ]}>
         <Text style={styles.statusText}>
-          {ride?.status === 'accepted' ? '✓ ACCEPTED' : '⏱ PENDING'}
+          {ride?.status === 'accepted' ? '✓ ACCEPTED' : 
+           ride?.status === 'ongoing' ? '▶ ONGOING' :
+           ride?.status === 'completed' ? '✓✓ COMPLETED' :
+           ride?.status === 'cancelled' ? '✗ CANCELLED' :
+           '⏱ PENDING'}
         </Text>
       </View>
 
@@ -116,10 +187,10 @@ export default function RideRequestStatus() {
       <Text style={styles.small}>Requested at: {new Date(ride?.requested_at).toLocaleString()}</Text>
 
       {/* Driver Information */}
-      {ride?.status === 'accepted' ? (
+      {ride?.status === 'accepted' || ride?.status === 'ongoing' ? (
         driverProfile ? (
           <View style={styles.driverBox}>
-            <Text style={styles.sectionTitle}>👤 Driver Accepted Your Request</Text>
+            <Text style={styles.sectionTitle}>👤 Driver Info</Text>
             <View style={styles.driverInfoCard}>
               <View style={styles.driverDetails}>
                 <View style={styles.driverDetail}>
@@ -157,11 +228,50 @@ export default function RideRequestStatus() {
         </View>
       )}
 
-      {ride?.status !== 'completed' && ride?.status !== 'cancelled' && (
-        <TouchableOpacity style={[styles.button, { marginTop: 20 }]} onPress={handleCancel}>
-          <Text style={styles.buttonText}>Cancel Ride</Text>
-        </TouchableOpacity>
-      )}
+      {/* Action Buttons */}
+      <View style={styles.actionButtons}>
+        {ride?.status === 'accepted' && (
+          <TouchableOpacity 
+            style={[styles.button, styles.ongoingBtn]}
+            onPress={handleMarkOngoing}
+            disabled={updating}
+          >
+            {updating ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Mark as Ongoing</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {ride?.status === 'ongoing' && (
+          <TouchableOpacity 
+            style={[styles.button, styles.completeBtn]}
+            onPress={handleMarkCompleted}
+            disabled={updating}
+          >
+            {updating ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Mark as Completed</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {ride?.status !== 'completed' && ride?.status !== 'cancelled' && (
+          <TouchableOpacity 
+            style={[styles.button, styles.cancelBtn]}
+            onPress={handleCancel}
+            disabled={updating}
+          >
+            {updating ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Cancel Ride</Text>
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -185,6 +295,15 @@ const styles = StyleSheet.create({
   statusAccepted: {
     backgroundColor: '#D4EDDA',
   },
+  statusOngoing: {
+    backgroundColor: '#B3E5FC',
+  },
+  statusCompleted: {
+    backgroundColor: '#C8E6C9',
+  },
+  statusCancelled: {
+    backgroundColor: '#FFCCCC',
+  },
   statusText: {
     fontSize: 14,
     fontWeight: '700',
@@ -199,9 +318,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderLeftWidth: 4,
     borderLeftColor: '#FFB81C',
-  },
-  routeItem: {
-    marginBottom: 12,
   },
   routeItem: {
     marginBottom: 12,
@@ -315,12 +431,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
+  /* Action Buttons */
+  actionButtons: {
+    gap: 12,
+    marginTop: 20,
+  },
   callBtn: { 
-    marginTop: 12,
     backgroundColor: '#4CAF50', 
     padding: 12, 
     borderRadius: 8, 
-    alignItems: 'center' 
+    alignItems: 'center',
+    marginTop: 12,
   },
   callText: { 
     fontWeight: '700',
@@ -328,11 +449,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   button: { 
-    backgroundColor: '#E53935', 
     padding: 14, 
     borderRadius: 10, 
     alignItems: 'center',
-    marginBottom: 20,
+  },
+  ongoingBtn: {
+    backgroundColor: '#2196F3',
+  },
+  completeBtn: {
+    backgroundColor: '#4CAF50',
+  },
+  cancelBtn: {
+    backgroundColor: '#E53935',
   },
   buttonText: { 
     color: '#fff', 
