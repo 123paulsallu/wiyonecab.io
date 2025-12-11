@@ -104,6 +104,23 @@ export async function updateRideStatus(rideId: string, status: Ride['status']): 
   }
 }
 
+/**
+ * Get rider profile by ID
+ */
+export async function getRiderProfile(riderId: string): Promise<any> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', riderId)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
 // Placeholder so Expo Router doesn't treat this helper file as a missing-route component.
 export default function _RidesPlaceholder() {
   return null;

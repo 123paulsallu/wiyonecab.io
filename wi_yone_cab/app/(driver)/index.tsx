@@ -60,6 +60,134 @@ interface Ride {
   destination_lng: number;
 }
 
+// Home Tab Content Component
+interface HomeTabContentProps {
+  user: UserProfile | null;
+  isOnline: boolean;
+  setIsOnline: (val: boolean) => void;
+  earnings: number;
+  pendingRides: Ride[];
+  loadingRides: boolean;
+  totalDrives: number;
+  completedDrives: number;
+  pendingDrives: number;
+  onAcceptRide: (rideId: string) => void;
+  onLogout: () => void;
+  colors: any;
+}
+
+function HomeTabContent({
+  user,
+  isOnline,
+  setIsOnline,
+  earnings,
+  pendingRides,
+  loadingRides,
+  totalDrives,
+  completedDrives,
+  pendingDrives,
+  onAcceptRide,
+  onLogout,
+  colors,
+}: HomeTabContentProps) {
+  return (
+    <ScrollView style={[styles.homeContainer, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: '#000000' }]}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerInfo}>
+            <Text style={styles.greeting}>Hello, {user?.full_name.split(" ")[0]}</Text>
+            <Text style={[styles.subtitle, { color: colors.primary }]}>
+              {user?.is_driver_approved ? "Ready to drive?" : "Verification pending"}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Content */}
+      <View style={[styles.content, { backgroundColor: colors.background }]}>
+        {user?.is_driver_approved ? (
+          <>
+            {/* Stats Card */}
+            <View style={[styles.statsContainer, { backgroundColor: colors.card }]}>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: colors.primary }]}>{totalDrives}</Text>
+                <Text style={[styles.statLabel, { color: colors.text }]}>Total Drives</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: colors.primary }]}>{completedDrives}</Text>
+                <Text style={[styles.statLabel, { color: colors.text }]}>Completed</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: colors.primary }]}>{pendingDrives}</Text>
+                <Text style={[styles.statLabel, { color: colors.text }]}>Pending</Text>
+              </View>
+            </View>
+
+            {/* Active Requests */}
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Available Requests</Text>
+            {loadingRides ? (
+              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={[styles.emptyStateText, { color: colors.text }]}>Loading requests...</Text>
+              </View>
+            ) : pendingRides.length > 0 ? (
+              <FlatList
+                scrollEnabled={false}
+                data={pendingRides}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={[
+                    styles.rideCard,
+                    { backgroundColor: colors.card, borderColor: colors.primary }
+                  ]}>
+                    <View style={styles.rideHeader}>
+                      <Text style={[styles.rideDistance, { color: colors.primary }]}>📍 New Request</Text>
+                      <Text style={[styles.rideTime, { color: colors.subtext }]}>
+                        {new Date(item.created_at).toLocaleTimeString()}
+                      </Text>
+                    </View>
+                    <View style={[styles.rideRoute, { backgroundColor: colors.background }]}>
+                      <Text style={[styles.routeFrom, { color: colors.text }]}>From: {item.origin_address}</Text>
+                      <Text style={[styles.routeTo, { color: colors.subtext }]}>To: {item.destination_address}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.acceptButton, { backgroundColor: colors.primary }]}
+                      onPress={() => onAcceptRide(item.id, item.rider_id)}
+                    >
+                      <Text style={[styles.acceptButtonText, { color: '#000000' }]}>✓ Accept Request</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+            ) : (
+              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                <Text style={styles.emptyStateEmoji}>📭</Text>
+                <Text style={[styles.emptyStateText, { color: colors.text }]}>No pending requests</Text>
+                <Text style={[styles.emptyStateSubtext, { color: colors.subtext }]}>
+                  New ride requests will appear here
+                </Text>
+              </View>
+            )}
+
+          </>
+        ) : (
+          <View style={[styles.approvalPending, { backgroundColor: colors.card, borderColor: colors.primary }]}>
+            <Text style={styles.approvalIcon}>⏳</Text>
+            <Text style={[styles.approvalTitle, { color: colors.text }]}>Verification In Progress</Text>
+            <Text style={[styles.approvalText, { color: colors.text }]}>
+              Your documents are being reviewed by our team. This typically takes 24-48 hours.
+            </Text>
+            <Text style={[styles.approvalNote, { color: colors.subtext }]}>
+              We'll notify you via email once your account is approved.
+            </Text>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
 export default function DriverDashboard() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -71,6 +199,9 @@ export default function DriverDashboard() {
   const [earnings, setEarnings] = useState(0);
   const [pendingRides, setPendingRides] = useState<Ride[]>([]);
   const [loadingRides, setLoadingRides] = useState(false);
+  const [totalDrives, setTotalDrives] = useState(0);
+  const [completedDrives, setCompletedDrives] = useState(0);
+  const [pendingDrives, setPendingDrives] = useState(0);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -117,11 +248,15 @@ export default function DriverDashboard() {
     fetchUserProfile();
   }, []);
 
-  // Fetch pending rides when screen is focused
+  // Fetch pending rides and stats when screen is focused
   useFocusEffect(
     React.useCallback(() => {
       fetchPendingRides();
-      const interval = setInterval(fetchPendingRides, 5000); // Refresh every 5 seconds
+      fetchStats();
+      const interval = setInterval(() => {
+        fetchPendingRides();
+        fetchStats();
+      }, 5000); // Refresh every 5 seconds
       return () => clearInterval(interval);
     }, [])
   );
@@ -144,7 +279,33 @@ export default function DriverDashboard() {
     }
   };
 
-  const handleAcceptRide = async (rideId: string) => {
+  const fetchStats = async () => {
+    try {
+      const session = await getSession();
+      if (!session) return;
+
+      // Fetch all rides for this driver
+      const { data: allRides, error: allErr } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('driver_id', session.userId);
+
+      if (allErr) throw allErr;
+
+      const rides = allRides || [];
+      const total = rides.length;
+      const completed = rides.filter(r => r.status === 'completed').length;
+      const pending = rides.filter(r => r.status === 'accepted' || r.status === 'ongoing').length;
+
+      setTotalDrives(total);
+      setCompletedDrives(completed);
+      setPendingDrives(pending);
+    } catch (err: any) {
+      console.error('Failed to fetch stats:', err);
+    }
+  };
+
+  const handleAcceptRide = async (rideId: string, riderId: string) => {
     try {
       const session = await getSession();
       if (!session) throw new Error('Not authenticated');
@@ -159,6 +320,9 @@ export default function DriverDashboard() {
       // Remove from pending list and refresh
       setPendingRides(pendingRides.filter(r => r.id !== rideId));
       fetchPendingRides();
+
+      // Navigate to rider details
+      router.push(`/rider-details?riderId=${riderId}`);
     } catch (err: any) {
       alert('Failed to accept ride: ' + err.message);
     }
@@ -217,6 +381,9 @@ export default function DriverDashboard() {
           earnings={earnings}
           pendingRides={pendingRides}
           loadingRides={loadingRides}
+          totalDrives={totalDrives}
+          completedDrives={completedDrives}
+          pendingDrives={pendingDrives}
           onAcceptRide={handleAcceptRide}
           onLogout={handleLogout}
           colors={colors}
@@ -232,113 +399,7 @@ export default function DriverDashboard() {
   );
 }
 
-// Home Tab Content Component
-interface HomeTabContentProps {
-  user: UserProfile | null;
-  isOnline: boolean;
-  setIsOnline: (val: boolean) => void;
-  earnings: number;
-  pendingRides: Ride[];
-  loadingRides: boolean;
-  onAcceptRide: (rideId: string) => void;
-  onLogout: () => void;
-  colors: any;
-}
 
-function HomeTabContent({
-  user,
-  isOnline,
-  setIsOnline,
-  earnings,
-  pendingRides,
-  loadingRides,
-  onAcceptRide,
-  onLogout,
-  colors,
-}: HomeTabContentProps) {
-  return (
-    <ScrollView style={[styles.homeContainer, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: '#000000' }]}>
-        <View style={styles.headerTop}>
-          <View style={styles.headerInfo}>
-            <Text style={styles.greeting}>Hello, {user?.full_name.split(" ")[0]}</Text>
-            <Text style={[styles.subtitle, { color: colors.primary }]}>
-              {user?.is_driver_approved ? "Ready to drive?" : "Verification pending"}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Content */}
-      <View style={[styles.content, { backgroundColor: colors.background }]}>
-        {user?.is_driver_approved ? (
-          <>
-
-
-            {/* Active Requests */}
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Available Requests</Text>
-            {loadingRides ? (
-              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                <ActivityIndicator color={colors.primary} />
-                <Text style={[styles.emptyStateText, { color: colors.text }]}>Loading requests...</Text>
-              </View>
-            ) : pendingRides.length > 0 ? (
-              <FlatList
-                scrollEnabled={false}
-                data={pendingRides}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <View style={[
-                    styles.rideCard,
-                    { backgroundColor: colors.card, borderColor: colors.primary }
-                  ]}>
-                    <View style={styles.rideHeader}>
-                      <Text style={[styles.rideDistance, { color: colors.primary }]}>📍 New Request</Text>
-                      <Text style={[styles.rideTime, { color: colors.subtext }]}>
-                        {new Date(item.created_at).toLocaleTimeString()}
-                      </Text>
-                    </View>
-                    <View style={[styles.rideRoute, { backgroundColor: colors.background }]}>
-                      <Text style={[styles.routeFrom, { color: colors.text }]}>From: {item.origin_address}</Text>
-                      <Text style={[styles.routeTo, { color: colors.subtext }]}>To: {item.destination_address}</Text>
-                    </View>
-                    <TouchableOpacity 
-                      style={[styles.acceptButton, { backgroundColor: colors.primary }]}
-                      onPress={() => onAcceptRide(item.id)}
-                    >
-                      <Text style={[styles.acceptButtonText, { color: '#000000' }]}>✓ Accept Request</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
-            ) : (
-              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
-                <Text style={styles.emptyStateEmoji}>📭</Text>
-                <Text style={[styles.emptyStateText, { color: colors.text }]}>No pending requests</Text>
-                <Text style={[styles.emptyStateSubtext, { color: colors.subtext }]}>
-                  New ride requests will appear here
-                </Text>
-              </View>
-            )}
-
-          </>
-        ) : (
-          <View style={[styles.approvalPending, { backgroundColor: colors.card, borderColor: colors.primary }]}>
-            <Text style={styles.approvalIcon}>⏳</Text>
-            <Text style={[styles.approvalTitle, { color: colors.text }]}>Verification In Progress</Text>
-            <Text style={[styles.approvalText, { color: colors.text }]}>
-              Your documents are being reviewed by our team. This typically takes 24-48 hours.
-            </Text>
-            <Text style={[styles.approvalNote, { color: colors.subtext }]}>
-              We'll notify you via email once your account is approved.
-            </Text>
-          </View>
-        )}
-      </View>
-    </ScrollView>
-  );
-}
 
 
 const styles = StyleSheet.create({
