@@ -19,6 +19,7 @@ import DriverBottomTabs from "../../components/DriverBottomTabs";
 import DriverDrivesScreen from "./drives";
 import DriverHistoryScreen from "./history";
 import DriverSettingsScreen from "./settings";
+import DriverSupportScreen from "./support";
 
 let AsyncStorage: any;
 try {
@@ -391,39 +392,6 @@ function HomeTabContent({
   );
 }
 
-// Driver Support Screen Component
-function DriverSupportScreen() {
-  const { colors } = useTheme();
-
-  return (
-    <ScrollView style={[styles.supportContainer, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
-      <View style={[styles.supportHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.supportHeaderTitle, { color: colors.text }]}>Support</Text>
-        <Text style={[styles.supportHeaderSubtitle, { color: colors.subtext }]}>Get help and contact us</Text>
-      </View>
-
-      <View style={[styles.supportContent, { backgroundColor: colors.background }]}>
-        <View style={[styles.supportCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MaterialIcons name="phone" size={32} color={colors.primary} />
-          <Text style={[styles.supportCardTitle, { color: colors.text }]}>Call Support</Text>
-          <Text style={[styles.supportCardSubtitle, { color: colors.subtext }]}>+1 (555) 123-4567</Text>
-        </View>
-
-        <View style={[styles.supportCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MaterialIcons name="mail" size={32} color={colors.primary} />
-          <Text style={[styles.supportCardTitle, { color: colors.text }]}>Email Us</Text>
-          <Text style={[styles.supportCardSubtitle, { color: colors.subtext }]}>support@wiyonecab.com</Text>
-        </View>
-
-        <View style={[styles.supportCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MaterialIcons name="help-center" size={32} color={colors.primary} />
-          <Text style={[styles.supportCardTitle, { color: colors.text }]}>FAQ</Text>
-          <Text style={[styles.supportCardSubtitle, { color: colors.subtext }]}>Visit our help center</Text>
-        </View>
-      </View>
-    </ScrollView>
-  );
-}
 
 const styles = StyleSheet.create({
   container: {
@@ -795,45 +763,5 @@ const styles = StyleSheet.create({
   settingsButtonText: {
     fontSize: 14,
     fontWeight: "700",
-  },
-
-  /* Support Tab */
-  supportContainer: {
-    flex: 1,
-  },
-  supportHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  supportHeaderTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  supportHeaderSubtitle: {
-    fontSize: 14,
-  },
-  supportContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingBottom: 100,
-    gap: 16,
-  },
-  supportCard: {
-    borderRadius: 12,
-    padding: 20,
-    alignItems: "center",
-    borderWidth: 1,
-  },
-  supportCardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  supportCardSubtitle: {
-    fontSize: 12,
-    textAlign: "center",
   },
 });

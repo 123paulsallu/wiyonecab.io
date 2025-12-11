@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { getSession } from '../../lib/customAuth';
@@ -98,27 +98,36 @@ export default function DriverHistoryScreen({ onClose }: DriverHistoryScreenProp
   }
 
   return (
-    <View style={dynamicStyles.container}>
+    <View style={[dynamicStyles.container, { flex: 1 }]}>
       <View style={[dynamicStyles.header, { borderBottomColor: colors.border }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Ride History</Text>
         <Text style={[styles.headerSubtitle, { color: colors.subtext }]}>{completedRides.length} total ride(s)</Text>
       </View>
 
       {completedRides.length === 0 ? (
-        <View style={dynamicStyles.emptyContainer}>
-          <MaterialIcons name="history" size={48} color={colors.subtext} />
-          <Text style={[styles.emptyText, { color: colors.text }]}>No ride history</Text>
-          <Text style={[styles.emptySubtext, { color: colors.subtext }]}>Your completed rides will appear here</Text>
-        </View>
+        <ScrollView
+          style={dynamicStyles.container}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+          }
+        >
+          <View style={dynamicStyles.emptyContainer}>
+            <MaterialIcons name="history" size={48} color={colors.subtext} />
+            <Text style={[styles.emptyText, { color: colors.text }]}>No ride history</Text>
+            <Text style={[styles.emptySubtext, { color: colors.subtext }]}>Your completed rides will appear here</Text>
+          </View>
+        </ScrollView>
       ) : (
-        <FlatList
-          data={completedRides}
-          keyExtractor={(item) => item.id}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          scrollEnabled={false}
-          renderItem={({ item }) => (
-            <View style={[dynamicStyles.rideCard, { borderColor: colors.border }]}>
+        <ScrollView
+          style={dynamicStyles.container}
+          showsVerticalScrollIndicator={true}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+          }
+        >
+          {completedRides.map((item) => (
+            <View key={item.id} style={[dynamicStyles.rideCard, { borderColor: colors.border }]}>
               <View style={styles.rideHeader}>
                 <View style={styles.statusBadge}>
                   <MaterialIcons
@@ -156,8 +165,9 @@ export default function DriverHistoryScreen({ onClose }: DriverHistoryScreenProp
                 </View>
               </View>
             </View>
-          )}
-        />
+          ))}
+          <View style={{ height: 20 }} />
+        </ScrollView>
       )}
     </View>
   );
