@@ -33,7 +33,7 @@ export default function DriverHistoryScreen({ onClose }: DriverHistoryScreenProp
   const loadCompletedRides = async () => {
     try {
       const session = await getSession();
-      if (!session) return;
+      if (!session) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
         .from('rides')

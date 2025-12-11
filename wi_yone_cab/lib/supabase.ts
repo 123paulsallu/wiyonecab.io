@@ -54,3 +54,5 @@ export async function setSupabaseSession(session: any) {
     // ignore
   }
 }
+
+export default supabase;
