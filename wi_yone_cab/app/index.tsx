@@ -1,13 +1,15 @@
 import { View, Text, Image, StyleSheet } from "react-native";
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
-import { getSession } from "./lib/customAuth";
+import { getSession } from "../lib/customAuth";
+import { useTheme } from "../lib/themeContext";
 import * as SplashScreen from "expo-splash-screen";
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 export default function Index() {
+  const { colors } = useTheme();
   const router = useRouter();
 
   useEffect(() => {
@@ -32,14 +34,14 @@ export default function Index() {
   }, [router]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Image
         source={require("../assets/images/icon.png")}
         style={styles.icon}
         resizeMode="contain"
       />
-      <Text style={styles.brand}>WiYone Cab</Text>
-      <Text style={styles.subtitle}>Your ride, your choice</Text>
+      <Text style={[styles.brand, { color: colors.primary }]}>WiYone Cab</Text>
+      <Text style={[styles.subtitle, { color: colors.text }]}>Your ride, your choice</Text>
     </View>
   );
 }
@@ -49,7 +51,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
   },
   icon: {
     width: 150,
@@ -59,11 +60,9 @@ const styles = StyleSheet.create({
   brand: {
     fontSize: 40,
     fontWeight: "700",
-    color: "#FFB81C",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 20,
-    color: "#000000",
   },
 });
