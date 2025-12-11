@@ -5,12 +5,13 @@ import { useRouter } from 'expo-router';
 import { customLogout, getSession } from '../lib/customAuth';
 import { supabase } from '../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../lib/themeContext';
 import BottomTabs from '../components/BottomTabs';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { isDarkMode, setIsDarkMode, colors } = useTheme();
   const [profile, setProfile] = useState<any | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
   const [preferences, setPreferences] = useState({
     notifications: true,
     smsUpdates: true,
@@ -19,12 +20,6 @@ export default function SettingsScreen() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        // Load dark mode preference
-        const darkModePreference = await AsyncStorage.getItem('darkModeEnabled');
-        if (darkModePreference !== null) {
-          setDarkMode(JSON.parse(darkModePreference));
-        }
-
         // Load profile
         const session = await getSession();
         if (!session) {
@@ -60,9 +55,8 @@ export default function SettingsScreen() {
 
   const toggleDarkMode = async () => {
     try {
-      const newValue = !darkMode;
-      setDarkMode(newValue);
-      await AsyncStorage.setItem('darkModeEnabled', JSON.stringify(newValue));
+      const newValue = !isDarkMode;
+      await setIsDarkMode(newValue);
       Alert.alert(
         'Dark Mode',
         newValue ? 'Dark mode enabled' : 'Dark mode disabled',
@@ -84,79 +78,72 @@ export default function SettingsScreen() {
     }
   };
 
-  const themeColors = {
-    background: darkMode ? '#1a1a1a' : '#f9f9f9',
-    card: darkMode ? '#262626' : '#fff',
-    text: darkMode ? '#fff' : '#000',
-    subtext: darkMode ? '#aaa' : '#999',
-    border: darkMode ? '#333' : '#e0e0e0',
-    headerBg: darkMode ? '#0a0a0a' : '#000',
-  };
+  const themeColors = colors;
 
   const dynamicStyles = {
     mainContainer: {
       ...styles.mainContainer,
-      backgroundColor: themeColors.background,
+      backgroundColor: colors.background,
     },
     container: {
       ...styles.container,
-      backgroundColor: themeColors.background,
+      backgroundColor: colors.background,
     },
     header: {
       ...styles.header,
-      backgroundColor: themeColors.headerBg,
+      backgroundColor: colors.headerBg,
     },
     profileCard: {
       ...styles.profileCard,
-      backgroundColor: themeColors.card,
+      backgroundColor: colors.card,
     },
     profileDetails: {
       ...styles.profileDetails,
-      backgroundColor: darkMode ? '#333' : '#f5f5f5',
+      backgroundColor: colors.secondary,
     },
     preferenceItem: {
       ...styles.preferenceItem,
-      backgroundColor: themeColors.card,
+      backgroundColor: colors.card,
     },
     menuItem: {
       ...styles.menuItem,
-      backgroundColor: themeColors.card,
+      backgroundColor: colors.card,
     },
     title: {
       ...styles.title,
-      color: themeColors.text,
+      color: colors.text,
     },
     sectionTitle: {
       ...styles.sectionTitle,
-      color: themeColors.text,
+      color: colors.text,
     },
     profileName: {
       ...styles.profileName,
-      color: themeColors.text,
+      color: colors.text,
     },
     detailLabel: {
       ...styles.detailLabel,
-      color: darkMode ? '#888' : '#888',
+      color: colors.subtext,
     },
     detailValue: {
       ...styles.detailValue,
-      color: darkMode ? '#ddd' : '#333',
+      color: colors.text,
     },
     divider: {
       ...styles.divider,
-      backgroundColor: themeColors.border,
+      backgroundColor: colors.border,
     },
     preferenceName: {
       ...styles.preferenceName,
-      color: themeColors.text,
+      color: colors.text,
     },
     preferenceDesc: {
       ...styles.preferenceDesc,
-      color: themeColors.subtext,
+      color: colors.subtext,
     },
     menuItemText: {
       ...styles.menuItemText,
-      color: themeColors.text,
+      color: colors.text,
     },
   };
 
@@ -213,17 +200,17 @@ export default function SettingsScreen() {
           {/* Dark Mode */}
           <View style={dynamicStyles.preferenceItem}>
             <View style={styles.preferenceLeft}>
-              <MaterialIcons name="dark-mode" size={24} color="#FFB81C" />
+              <MaterialIcons name="dark-mode" size={24} color={colors.primary} />
               <View style={styles.preferenceText}>
                 <Text style={dynamicStyles.preferenceName}>Dark Mode</Text>
                 <Text style={dynamicStyles.preferenceDesc}>Use dark theme</Text>
               </View>
             </View>
             <Switch
-              value={darkMode}
+              value={isDarkMode}
               onValueChange={toggleDarkMode}
-              trackColor={{ false: '#ccc', true: '#FFB81C' }}
-              thumbColor={darkMode ? '#FFB81C' : '#888'}
+              trackColor={{ false: '#ccc', true: colors.primary }}
+              thumbColor={isDarkMode ? colors.primary : '#888'}
             />
           </View>
 
