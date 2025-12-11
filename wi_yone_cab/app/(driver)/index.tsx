@@ -18,6 +18,7 @@ import { useTheme } from "../../lib/themeContext";
 import DriverBottomTabs from "../../components/DriverBottomTabs";
 import DriverDrivesScreen from "./drives";
 import DriverHistoryScreen from "./history";
+import DriverSettingsScreen from "./settings";
 
 let AsyncStorage: any;
 try {
@@ -203,7 +204,7 @@ export default function DriverDashboard() {
       case 'history':
         return <DriverHistoryScreen />;
       case 'settings':
-        return <DriverSettingsScreen user={user} onLogout={handleLogout} />;
+        return <DriverSettingsScreen />;
       case 'support':
         return <DriverSupportScreen />;
       case 'home':
@@ -385,65 +386,6 @@ function HomeTabContent({
             </Text>
           </View>
         )}
-      </View>
-    </ScrollView>
-  );
-}
-
-// Driver Settings Screen Component
-interface DriverSettingsScreenProps {
-  user: UserProfile | null;
-  onLogout: () => void;
-}
-
-function DriverSettingsScreen({ user, onLogout }: DriverSettingsScreenProps) {
-  const { colors } = useTheme();
-
-  return (
-    <ScrollView style={[styles.settingsContainer, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
-      <View style={[styles.settingsHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.settingsHeaderTitle, { color: colors.text }]}>Settings</Text>
-        <Text style={[styles.settingsHeaderSubtitle, { color: colors.subtext }]}>Manage your preferences</Text>
-      </View>
-
-      <View style={[styles.settingsContent, { backgroundColor: colors.background }]}>
-        {/* Profile Section */}
-        <Text style={[styles.settingsSectionTitle, { color: colors.text }]}>Profile</Text>
-        <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.settingsItem}>
-            <MaterialIcons name="person" size={20} color={colors.primary} />
-            <View style={styles.settingsItemContent}>
-              <Text style={[styles.settingsItemLabel, { color: colors.text }]}>Name</Text>
-              <Text style={[styles.settingsItemValue, { color: colors.subtext }]}>{user?.full_name}</Text>
-            </View>
-          </View>
-          <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.settingsItem}>
-            <MaterialIcons name="phone" size={20} color={colors.primary} />
-            <View style={styles.settingsItemContent}>
-              <Text style={[styles.settingsItemLabel, { color: colors.text }]}>Phone</Text>
-              <Text style={[styles.settingsItemValue, { color: colors.subtext }]}>{user?.phone}</Text>
-            </View>
-          </View>
-          <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.settingsItem}>
-            <MaterialIcons name="location-city" size={20} color={colors.primary} />
-            <View style={styles.settingsItemContent}>
-              <Text style={[styles.settingsItemLabel, { color: colors.text }]}>City</Text>
-              <Text style={[styles.settingsItemValue, { color: colors.subtext }]}>{user?.city}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Account Actions */}
-        <Text style={[styles.settingsSectionTitle, { color: colors.text }]}>Account</Text>
-        <TouchableOpacity 
-          style={[styles.settingsButton, { backgroundColor: '#ff6b6b', borderColor: '#ff6b6b' }]}
-          onPress={onLogout}
-        >
-          <MaterialIcons name="logout" size={20} color="#fff" />
-          <Text style={[styles.settingsButtonText, { color: '#fff' }]}>Logout</Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );

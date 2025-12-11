@@ -2,13 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Switch } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { customLogout, getSession } from '../lib/customAuth';
-import { supabase } from '../lib/supabase';
+import { customLogout, getSession } from '../../lib/customAuth';
+import { supabase } from '../../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useTheme } from '../lib/themeContext';
-import BottomTabs from '../components/BottomTabs';
+import { useTheme } from '../../lib/themeContext';
 
-export default function SettingsScreen() {
+interface DriverSettingsScreenProps {
+  onClose?: () => void;
+}
+
+export default function DriverSettingsScreen({ onClose }: DriverSettingsScreenProps) {
   const router = useRouter();
   const { isDarkMode, setIsDarkMode, colors } = useTheme();
   const [profile, setProfile] = useState<any | null>(null);
@@ -20,7 +23,6 @@ export default function SettingsScreen() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        // Load profile
         const session = await getSession();
         if (!session) {
           router.replace('/(auth)/login');
@@ -32,7 +34,7 @@ export default function SettingsScreen() {
           .eq('id', session.userId)
           .single();
         if (error) {
-          console.warn('Failed to load profile in Settings:', error);
+          console.warn('Failed to load profile in Driver Settings:', error);
           return;
         }
         setProfile(data);
@@ -57,14 +59,8 @@ export default function SettingsScreen() {
     try {
       const newValue = !isDarkMode;
       await setIsDarkMode(newValue);
-      Alert.alert(
-        'Dark Mode',
-        newValue ? 'Dark mode enabled' : 'Dark mode disabled',
-        [{ text: 'OK' }]
-      );
     } catch (err) {
       console.warn('Error toggling dark mode:', err);
-      Alert.alert('Error', 'Failed to update dark mode setting');
     }
   };
 
@@ -78,142 +74,122 @@ export default function SettingsScreen() {
     }
   };
 
-  const themeColors = colors;
-
   const dynamicStyles = {
     mainContainer: {
-      ...styles.mainContainer,
       backgroundColor: colors.background,
     },
     container: {
-      ...styles.container,
       backgroundColor: colors.background,
     },
     header: {
-      ...styles.header,
-      backgroundColor: colors.headerBg,
+      backgroundColor: colors.card,
+      borderBottomColor: colors.border,
     },
     profileCard: {
-      ...styles.profileCard,
       backgroundColor: colors.card,
-    },
-    profileDetails: {
-      ...styles.profileDetails,
-      backgroundColor: colors.secondary,
+      borderColor: colors.border,
+      shadowColor: colors.text,
     },
     preferenceItem: {
-      ...styles.preferenceItem,
       backgroundColor: colors.card,
+      borderColor: colors.border,
     },
     menuItem: {
-      ...styles.menuItem,
       backgroundColor: colors.card,
+      borderColor: colors.border,
     },
     title: {
-      ...styles.title,
       color: colors.text,
     },
     sectionTitle: {
-      ...styles.sectionTitle,
       color: colors.text,
     },
     profileName: {
-      ...styles.profileName,
       color: colors.text,
     },
     detailLabel: {
-      ...styles.detailLabel,
       color: colors.subtext,
     },
     detailValue: {
-      ...styles.detailValue,
       color: colors.text,
     },
     divider: {
-      ...styles.divider,
       backgroundColor: colors.border,
     },
     preferenceName: {
-      ...styles.preferenceName,
       color: colors.text,
     },
     preferenceDesc: {
-      ...styles.preferenceDesc,
       color: colors.subtext,
     },
     menuItemText: {
-      ...styles.menuItemText,
       color: colors.text,
     },
   };
 
   return (
-    <View style={dynamicStyles.mainContainer}>
-      <ScrollView style={dynamicStyles.container} showsVerticalScrollIndicator={false}>
+    <View style={[styles.mainContainer, dynamicStyles.mainContainer]}>
+      <ScrollView style={[styles.container, dynamicStyles.container]} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={[dynamicStyles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          <Text style={[dynamicStyles.title, { color: colors.text }]}>Settings</Text>
+        <View style={[styles.header, dynamicStyles.header, { borderBottomWidth: 1 }]}>
+          <Text style={[styles.title, dynamicStyles.title]}>Settings</Text>
           <Text style={[styles.headerSubtitle, { color: colors.subtext }]}>Manage your preferences</Text>
         </View>
 
         {/* Profile Section */}
         {profile && (
           <View style={styles.section}>
-            <Text style={[dynamicStyles.sectionTitle, { color: colors.text }]}>Account</Text>
-            <View style={[dynamicStyles.profileCard, { 
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              shadowColor: colors.text,
-            }]}>
+            <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>Account</Text>
+            <View style={[styles.profileCard, dynamicStyles.profileCard, { borderWidth: 1 }]}>
               <View style={styles.profileHeader}>
                 <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
                   <MaterialIcons name="account-circle" size={40} color="#000" />
                 </View>
                 <View style={styles.profileInfo}>
-                  <Text style={[dynamicStyles.profileName, { color: colors.text }]}>{profile.full_name || profile.username}</Text>
-                  <Text style={[styles.profileRole, { color: colors.primary }]}>{profile.role === 'driver' ? '🚗 Driver' : '👤 Rider'}</Text>
+                  <Text style={[styles.profileName, dynamicStyles.profileName]}>{profile.full_name || profile.username}</Text>
+                  <Text style={[styles.profileRole, { color: colors.primary }]}>🚗 Driver</Text>
                 </View>
               </View>
-              <View style={[dynamicStyles.profileDetails, { backgroundColor: colors.background, borderRadius: 8 }]}>
+              <View style={[styles.profileDetails, { backgroundColor: colors.background }]}>
                 <View style={styles.detailRow}>
-                  <View style={styles.detailIcon}>
-                    <MaterialIcons name="person" size={18} color={colors.primary} />
+                  <View style={[styles.detailIcon, { backgroundColor: colors.primary }]}>
+                    <MaterialIcons name="person" size={16} color="#000" />
                   </View>
                   <View style={styles.detailContent}>
-                    <Text style={[dynamicStyles.detailLabel, { color: colors.subtext }]}>Full Name</Text>
-                    <Text style={[dynamicStyles.detailValue, { color: colors.text }]}>{profile.full_name || '—'}</Text>
+                    <Text style={[styles.detailLabel, dynamicStyles.detailLabel]}>Full Name</Text>
+                    <Text style={[styles.detailValue, dynamicStyles.detailValue]}>{profile.full_name || '—'}</Text>
                   </View>
                 </View>
-                <View style={[dynamicStyles.divider, { marginVertical: 12 }]} />
+                <View style={[styles.divider, dynamicStyles.divider, { marginVertical: 12 }]} />
                 <View style={styles.detailRow}>
-                  <View style={styles.detailIcon}>
-                    <MaterialIcons name="phone" size={18} color={colors.primary} />
+                  <View style={[styles.detailIcon, { backgroundColor: colors.primary }]}>
+                    <MaterialIcons name="phone" size={16} color="#000" />
                   </View>
                   <View style={styles.detailContent}>
-                    <Text style={[dynamicStyles.detailLabel, { color: colors.subtext }]}>Phone</Text>
-                    <Text style={[dynamicStyles.detailValue, { color: colors.text }]}>{profile.phone || '—'}</Text>
+                    <Text style={[styles.detailLabel, dynamicStyles.detailLabel]}>Phone</Text>
+                    <Text style={[styles.detailValue, dynamicStyles.detailValue]}>{profile.phone || '—'}</Text>
                   </View>
                 </View>
-                <View style={[dynamicStyles.divider, { marginVertical: 12 }]} />
+                <View style={[styles.divider, dynamicStyles.divider, { marginVertical: 12 }]} />
                 <View style={styles.detailRow}>
-                  <View style={styles.detailIcon}>
-                    <MaterialIcons name="mail" size={18} color={colors.primary} />
+                  <View style={[styles.detailIcon, { backgroundColor: colors.primary }]}>
+                    <MaterialIcons name="mail" size={16} color="#000" />
                   </View>
                   <View style={styles.detailContent}>
-                    <Text style={[dynamicStyles.detailLabel, { color: colors.subtext }]}>Email</Text>
-                    <Text style={[dynamicStyles.detailValue, { color: colors.text }]}>{profile.username || '—'}</Text>
+                    <Text style={[styles.detailLabel, dynamicStyles.detailLabel]}>Email</Text>
+                    <Text style={[styles.detailValue, dynamicStyles.detailValue]}>{profile.username || '—'}</Text>
                   </View>
                 </View>
                 {profile.city && (
                   <>
-                    <View style={[dynamicStyles.divider, { marginVertical: 12 }]} />
+                    <View style={[styles.divider, dynamicStyles.divider, { marginVertical: 12 }]} />
                     <View style={styles.detailRow}>
-                      <View style={styles.detailIcon}>
-                        <MaterialIcons name="location-city" size={18} color={colors.primary} />
+                      <View style={[styles.detailIcon, { backgroundColor: colors.primary }]}>
+                        <MaterialIcons name="location-city" size={16} color="#000" />
                       </View>
                       <View style={styles.detailContent}>
-                        <Text style={[dynamicStyles.detailLabel, { color: colors.subtext }]}>City</Text>
-                        <Text style={[dynamicStyles.detailValue, { color: colors.text }]}>{profile.city}</Text>
+                        <Text style={[styles.detailLabel, dynamicStyles.detailLabel]}>City</Text>
+                        <Text style={[styles.detailValue, dynamicStyles.detailValue]}>{profile.city}</Text>
                       </View>
                     </View>
                   </>
@@ -225,21 +201,17 @@ export default function SettingsScreen() {
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={[dynamicStyles.sectionTitle, { color: colors.text }]}>Preferences</Text>
+          <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>Preferences</Text>
 
           {/* Dark Mode */}
-          <View style={[dynamicStyles.preferenceItem, { 
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderWidth: 1,
-          }]}>
+          <View style={[styles.preferenceItem, dynamicStyles.preferenceItem, { borderWidth: 1 }]}>
             <View style={styles.preferenceLeft}>
-              <View style={[styles.preferencIconBox, { backgroundColor: colors.primary }]}>
-                <MaterialIcons name="dark-mode" size={20} color="#000" />
+              <View style={[styles.preferenceIconBox, { backgroundColor: colors.primary }]}>
+                <MaterialIcons name="dark-mode" size={18} color="#000" />
               </View>
               <View style={styles.preferenceText}>
-                <Text style={[dynamicStyles.preferenceName, { color: colors.text }]}>Dark Mode</Text>
-                <Text style={[dynamicStyles.preferenceDesc, { color: colors.subtext }]}>Use dark theme across the app</Text>
+                <Text style={[styles.preferenceName, dynamicStyles.preferenceName]}>Dark Mode</Text>
+                <Text style={[styles.preferenceDesc, dynamicStyles.preferenceDesc]}>Use dark theme across the app</Text>
               </View>
             </View>
             <Switch
@@ -251,18 +223,14 @@ export default function SettingsScreen() {
           </View>
 
           {/* Push Notifications */}
-          <View style={[dynamicStyles.preferenceItem, { 
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderWidth: 1,
-          }]}>
+          <View style={[styles.preferenceItem, dynamicStyles.preferenceItem, { borderWidth: 1 }]}>
             <View style={styles.preferenceLeft}>
-              <View style={[styles.preferencIconBox, { backgroundColor: colors.primary }]}>
-                <MaterialIcons name="notifications-active" size={20} color="#000" />
+              <View style={[styles.preferenceIconBox, { backgroundColor: colors.primary }]}>
+                <MaterialIcons name="notifications-active" size={18} color="#000" />
               </View>
               <View style={styles.preferenceText}>
-                <Text style={[dynamicStyles.preferenceName, { color: colors.text }]}>Push Notifications</Text>
-                <Text style={[dynamicStyles.preferenceDesc, { color: colors.subtext }]}>Ride updates and offers</Text>
+                <Text style={[styles.preferenceName, dynamicStyles.preferenceName]}>Push Notifications</Text>
+                <Text style={[styles.preferenceDesc, dynamicStyles.preferenceDesc]}>Ride requests and updates</Text>
               </View>
             </View>
             <Switch
@@ -274,18 +242,14 @@ export default function SettingsScreen() {
           </View>
 
           {/* SMS Updates */}
-          <View style={[dynamicStyles.preferenceItem, { 
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderWidth: 1,
-          }]}>
+          <View style={[styles.preferenceItem, dynamicStyles.preferenceItem, { borderWidth: 1 }]}>
             <View style={styles.preferenceLeft}>
-              <View style={[styles.preferencIconBox, { backgroundColor: colors.primary }]}>
-                <MaterialIcons name="sms" size={20} color="#000" />
+              <View style={[styles.preferenceIconBox, { backgroundColor: colors.primary }]}>
+                <MaterialIcons name="sms" size={18} color="#000" />
               </View>
               <View style={styles.preferenceText}>
-                <Text style={[dynamicStyles.preferenceName, { color: colors.text }]}>SMS Updates</Text>
-                <Text style={[dynamicStyles.preferenceDesc, { color: colors.subtext }]}>Receive SMS notifications</Text>
+                <Text style={[styles.preferenceName, dynamicStyles.preferenceName]}>SMS Updates</Text>
+                <Text style={[styles.preferenceDesc, dynamicStyles.preferenceDesc]}>Receive SMS notifications</Text>
               </View>
             </View>
             <Switch
@@ -299,53 +263,40 @@ export default function SettingsScreen() {
 
         {/* Help & Support Section */}
         <View style={styles.section}>
-          <Text style={[dynamicStyles.sectionTitle, { color: colors.text }]}>Help & Support</Text>
-          <TouchableOpacity style={[dynamicStyles.menuItem, { 
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderWidth: 1,
-          }]}>
+          <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>Help & Support</Text>
+          <TouchableOpacity style={[styles.menuItem, dynamicStyles.menuItem, { borderWidth: 1 }]}>
             <View style={[styles.menuIconBox, { backgroundColor: colors.primary }]}>
-              <MaterialIcons name="help-outline" size={20} color="#000" />
+              <MaterialIcons name="help-outline" size={18} color="#000" />
             </View>
-            <Text style={[dynamicStyles.menuItemText, { color: colors.text }]}>FAQ</Text>
-            <MaterialIcons name="chevron-right" size={24} color={colors.subtext} />
+            <Text style={[styles.menuItemText, dynamicStyles.menuItemText]}>FAQ</Text>
+            <MaterialIcons name="chevron-right" size={22} color={colors.subtext} />
           </TouchableOpacity>
-          <TouchableOpacity style={[dynamicStyles.menuItem, { 
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderWidth: 1,
-          }]}>
+          <TouchableOpacity style={[styles.menuItem, dynamicStyles.menuItem, { borderWidth: 1 }]}>
             <View style={[styles.menuIconBox, { backgroundColor: colors.primary }]}>
-              <MaterialIcons name="mail-outline" size={20} color="#000" />
+              <MaterialIcons name="mail-outline" size={18} color="#000" />
             </View>
-            <Text style={[dynamicStyles.menuItemText, { color: colors.text }]}>Contact Support</Text>
-            <MaterialIcons name="chevron-right" size={24} color={colors.subtext} />
+            <Text style={[styles.menuItemText, dynamicStyles.menuItemText]}>Contact Support</Text>
+            <MaterialIcons name="chevron-right" size={22} color={colors.subtext} />
           </TouchableOpacity>
-          <TouchableOpacity style={[dynamicStyles.menuItem, { 
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderWidth: 1,
-          }]}>
+          <TouchableOpacity style={[styles.menuItem, dynamicStyles.menuItem, { borderWidth: 1 }]}>
             <View style={[styles.menuIconBox, { backgroundColor: colors.primary }]}>
-              <MaterialIcons name="description" size={20} color="#000" />
+              <MaterialIcons name="description" size={18} color="#000" />
             </View>
-            <Text style={[dynamicStyles.menuItemText, { color: colors.text }]}>Terms & Conditions</Text>
-            <MaterialIcons name="chevron-right" size={24} color={colors.subtext} />
+            <Text style={[styles.menuItemText, dynamicStyles.menuItemText]}>Terms & Conditions</Text>
+            <MaterialIcons name="chevron-right" size={22} color={colors.subtext} />
           </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
         <View style={styles.section}>
           <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.primary }]} onPress={handleLogout}>
-            <MaterialIcons name="logout" size={20} color="#000" />
+            <MaterialIcons name="logout" size={18} color="#000" />
             <Text style={[styles.logoutButtonText, { color: '#000' }]}>Logout</Text>
           </TouchableOpacity>
         </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
-      <BottomTabs active="settings" />
     </View>
   );
 }
@@ -353,25 +304,22 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
   },
   header: {
-    backgroundColor: '#000',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
-  },
-  headerSubtitle: {
-    fontSize: 13,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#fff',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 13,
   },
   section: {
     marginVertical: 12,
@@ -380,12 +328,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
     marginBottom: 12,
     marginLeft: 4,
   },
   profileCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -412,15 +358,13 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    marginBottom: 2,
   },
   profileRole: {
     fontSize: 13,
-    color: '#FFB81C',
     marginTop: 2,
   },
   profileDetails: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 12,
   },
@@ -442,24 +386,19 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: '#888',
     marginBottom: 4,
   },
   detailValue: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#333',
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 8,
   },
   preferenceItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 10,
@@ -474,7 +413,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  preferencIconBox: {
+  preferenceIconBox: {
     width: 40,
     height: 40,
     borderRadius: 10,
@@ -488,18 +427,15 @@ const styles = StyleSheet.create({
   preferenceName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000',
     marginBottom: 2,
   },
   preferenceDesc: {
     fontSize: 12,
-    color: '#999',
     marginTop: 2,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 10,
@@ -521,19 +457,20 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: '#000',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#070707ff',
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     marginTop: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   logoutButtonText: {
-    color: '#fff',
     fontWeight: '700',
     fontSize: 15,
     marginLeft: 8,
