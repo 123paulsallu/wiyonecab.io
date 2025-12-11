@@ -6,13 +6,19 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Switch,
   FlatList,
+  SafeAreaView,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { supabase } from "../../lib/supabase";
-import { getSession, customLogout } from "../lib/customAuth";
+import { getSession, customLogout } from "../../lib/customAuth";
+import { useTheme } from "../../lib/themeContext";
+import DriverBottomTabs from "../../components/DriverBottomTabs";
+import DriverDrivesScreen from "./drives";
+import DriverHistoryScreen from "./history";
+
 let AsyncStorage: any;
 try {
   AsyncStorage = require("@react-native-async-storage/async-storage").default;
@@ -54,6 +60,8 @@ interface Ride {
 
 export default function DriverDashboard() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string>("");
@@ -67,7 +75,7 @@ export default function DriverDashboard() {
       try {
         const session = await getSession();
         if (!session) {
-          router.push("/login");
+          router.push("/(auth)/login");
           return;
         }
 
@@ -165,52 +173,115 @@ export default function DriverDashboard() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#FFB81C" />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error && !user) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.button} onPress={handleLogout}>
-          <Text style={styles.buttonText}>Go Back to Login</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+          <Text style={[styles.errorText, { color: '#ff6b6b' }]}>{error}</Text>
+          <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleLogout}>
+            <Text style={styles.buttonText}>Go Back to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
+  // Render different screens based on active tab
+  const renderActiveScreen = () => {
+    switch (activeTab) {
+      case 'drives':
+        return <DriverDrivesScreen />;
+      case 'history':
+        return <DriverHistoryScreen />;
+      case 'settings':
+        return <DriverSettingsScreen user={user} onLogout={handleLogout} />;
+      case 'support':
+        return <DriverSupportScreen />;
+      case 'home':
+      default:
+        return <HomeTabContent
+          user={user}
+          isOnline={isOnline}
+          setIsOnline={setIsOnline}
+          earnings={earnings}
+          pendingRides={pendingRides}
+          loadingRides={loadingRides}
+          onAcceptRide={handleAcceptRide}
+          onLogout={handleLogout}
+          colors={colors}
+        />;
+    }
+  };
+
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background, flex: 1 }]}>
+      {renderActiveScreen()}
+      <DriverBottomTabs active={activeTab} onTabChange={setActiveTab} />
+    </SafeAreaView>
+  );
+}
+
+// Home Tab Content Component
+interface HomeTabContentProps {
+  user: UserProfile | null;
+  isOnline: boolean;
+  setIsOnline: (val: boolean) => void;
+  earnings: number;
+  pendingRides: Ride[];
+  loadingRides: boolean;
+  onAcceptRide: (rideId: string) => void;
+  onLogout: () => void;
+  colors: any;
+}
+
+function HomeTabContent({
+  user,
+  isOnline,
+  setIsOnline,
+  earnings,
+  pendingRides,
+  loadingRides,
+  onAcceptRide,
+  onLogout,
+  colors,
+}: HomeTabContentProps) {
+  return (
+    <ScrollView style={[styles.homeContainer, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: '#000000' }]}>
         <View style={styles.headerTop}>
           <View style={styles.headerInfo}>
             <Text style={styles.greeting}>Hello, {user?.full_name.split(" ")[0]}</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { color: colors.primary }]}>
               {user?.is_driver_approved ? "Ready to drive?" : "Verification pending"}
             </Text>
           </View>
           <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
+            style={[styles.logoutButton, { backgroundColor: colors.primary }]}
+            onPress={onLogout}
           >
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
 
         {/* User Card */}
-        <View style={styles.userCard}>
+        <View style={[styles.userCard, { backgroundColor: colors.card, borderLeftColor: colors.primary }]}>
           <View style={styles.userCardContent}>
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{user?.full_name}</Text>
-              <Text style={styles.userPhone}>{user?.phone}</Text>
-              <Text style={styles.userEmail}>{user?.user.email}</Text>
+              <Text style={[styles.userName, { color: colors.text }]}>{user?.full_name}</Text>
+              <Text style={[styles.userPhone, { color: colors.subtext }]}>{user?.phone}</Text>
+              <Text style={[styles.userEmail, { color: colors.subtext }]}>{user?.user.email}</Text>
             </View>
-            <View style={styles.roleBadge}>
+            <View style={[styles.roleBadge, { backgroundColor: colors.primary }]}>
               <Text style={styles.roleBadgeText}>Driver</Text>
             </View>
           </View>
@@ -218,42 +289,37 @@ export default function DriverDashboard() {
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
-        {error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorMessage}>{error}</Text>
-          </View>
-        )}
-
+      <View style={[styles.content, { backgroundColor: colors.background }]}>
         {user?.is_driver_approved ? (
           <>
             {/* Driver Status Toggle */}
-            <Text style={styles.sectionTitle}>Status</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Status</Text>
             <TouchableOpacity
               style={[
                 styles.statusToggle,
-                isOnline && styles.statusOnline,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                isOnline && { ...styles.statusOnline, borderColor: colors.primary },
               ]}
               onPress={() => setIsOnline(!isOnline)}
             >
               <Text style={styles.statusDot}>{isOnline ? "🟢" : "⚪"}</Text>
-              <Text style={styles.statusText}>
+              <Text style={[styles.statusText, { color: colors.text }]}>
                 {isOnline ? "Online" : "Offline"}
               </Text>
             </TouchableOpacity>
 
             {/* Earnings */}
-            <View style={styles.earningsBox}>
-              <Text style={styles.earningsAmount}>${earnings.toFixed(2)}</Text>
-              <Text style={styles.earningsLabel}>Today's Earnings</Text>
+            <View style={[styles.earningsBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.earningsAmount, { color: colors.primary }]}>${earnings.toFixed(2)}</Text>
+              <Text style={[styles.earningsLabel, { color: colors.subtext }]}>Today's Earnings</Text>
             </View>
 
-            {/* Active Rides */}
-            <Text style={styles.sectionTitle}>Available Requests</Text>
+            {/* Active Requests */}
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Available Requests</Text>
             {loadingRides ? (
-              <View style={styles.emptyState}>
-                <ActivityIndicator color="#FFB81C" />
-                <Text style={styles.emptyStateText}>Loading requests...</Text>
+              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={[styles.emptyStateText, { color: colors.text }]}>Loading requests...</Text>
               </View>
             ) : pendingRides.length > 0 ? (
               <FlatList
@@ -261,55 +327,60 @@ export default function DriverDashboard() {
                 data={pendingRides}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                  <View style={styles.rideCard}>
+                  <View style={[
+                    styles.rideCard,
+                    { backgroundColor: colors.card, borderColor: colors.primary }
+                  ]}>
                     <View style={styles.rideHeader}>
-                      <Text style={styles.rideDistance}>📍 New Request</Text>
-                      <Text style={styles.rideTime}>{new Date(item.created_at).toLocaleTimeString()}</Text>
+                      <Text style={[styles.rideDistance, { color: colors.primary }]}>📍 New Request</Text>
+                      <Text style={[styles.rideTime, { color: colors.subtext }]}>
+                        {new Date(item.created_at).toLocaleTimeString()}
+                      </Text>
                     </View>
-                    <View style={styles.rideRoute}>
-                      <Text style={styles.routeFrom}>From: {item.origin_address}</Text>
-                      <Text style={styles.routeTo}>To: {item.destination_address}</Text>
+                    <View style={[styles.rideRoute, { backgroundColor: colors.background }]}>
+                      <Text style={[styles.routeFrom, { color: colors.text }]}>From: {item.origin_address}</Text>
+                      <Text style={[styles.routeTo, { color: colors.subtext }]}>To: {item.destination_address}</Text>
                     </View>
                     <TouchableOpacity 
-                      style={styles.acceptButton}
-                      onPress={() => handleAcceptRide(item.id)}
+                      style={[styles.acceptButton, { backgroundColor: colors.primary }]}
+                      onPress={() => onAcceptRide(item.id)}
                     >
-                      <Text style={styles.acceptButtonText}>✓ Accept Request</Text>
+                      <Text style={[styles.acceptButtonText, { color: '#000000' }]}>✓ Accept Request</Text>
                     </TouchableOpacity>
                   </View>
                 )}
               />
             ) : (
-              <View style={styles.emptyState}>
+              <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
                 <Text style={styles.emptyStateEmoji}>📭</Text>
-                <Text style={styles.emptyStateText}>No pending requests</Text>
-                <Text style={styles.emptyStateSubtext}>
+                <Text style={[styles.emptyStateText, { color: colors.text }]}>No pending requests</Text>
+                <Text style={[styles.emptyStateSubtext, { color: colors.subtext }]}>
                   New ride requests will appear here
                 </Text>
               </View>
             )}
 
             {/* Stats */}
-            <Text style={styles.sectionTitle}>Stats</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Stats</Text>
             <View style={styles.statsContainer}>
-              <View style={styles.statBox}>
-                <Text style={styles.statValue}>0</Text>
-                <Text style={styles.statLabel}>Rides Today</Text>
+              <View style={[styles.statBox, { backgroundColor: colors.card }]}>
+                <Text style={[styles.statValue, { color: colors.primary }]}>0</Text>
+                <Text style={[styles.statLabel, { color: colors.subtext }]}>Rides Today</Text>
               </View>
-              <View style={styles.statBox}>
-                <Text style={styles.statValue}>5.0</Text>
-                <Text style={styles.statLabel}>Rating</Text>
+              <View style={[styles.statBox, { backgroundColor: colors.card }]}>
+                <Text style={[styles.statValue, { color: colors.primary }]}>5.0</Text>
+                <Text style={[styles.statLabel, { color: colors.subtext }]}>Rating</Text>
               </View>
             </View>
           </>
         ) : (
-          <View style={styles.approvalPending}>
+          <View style={[styles.approvalPending, { backgroundColor: colors.card, borderColor: colors.primary }]}>
             <Text style={styles.approvalIcon}>⏳</Text>
-            <Text style={styles.approvalTitle}>Verification In Progress</Text>
-            <Text style={styles.approvalText}>
+            <Text style={[styles.approvalTitle, { color: colors.text }]}>Verification In Progress</Text>
+            <Text style={[styles.approvalText, { color: colors.text }]}>
               Your documents are being reviewed by our team. This typically takes 24-48 hours.
             </Text>
-            <Text style={styles.approvalNote}>
+            <Text style={[styles.approvalNote, { color: colors.subtext }]}>
               We'll notify you via email once your account is approved.
             </Text>
           </View>
@@ -319,28 +390,122 @@ export default function DriverDashboard() {
   );
 }
 
+// Driver Settings Screen Component
+interface DriverSettingsScreenProps {
+  user: UserProfile | null;
+  onLogout: () => void;
+}
+
+function DriverSettingsScreen({ user, onLogout }: DriverSettingsScreenProps) {
+  const { colors } = useTheme();
+
+  return (
+    <ScrollView style={[styles.settingsContainer, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+      <View style={[styles.settingsHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <Text style={[styles.settingsHeaderTitle, { color: colors.text }]}>Settings</Text>
+        <Text style={[styles.settingsHeaderSubtitle, { color: colors.subtext }]}>Manage your preferences</Text>
+      </View>
+
+      <View style={[styles.settingsContent, { backgroundColor: colors.background }]}>
+        {/* Profile Section */}
+        <Text style={[styles.settingsSectionTitle, { color: colors.text }]}>Profile</Text>
+        <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.settingsItem}>
+            <MaterialIcons name="person" size={20} color={colors.primary} />
+            <View style={styles.settingsItemContent}>
+              <Text style={[styles.settingsItemLabel, { color: colors.text }]}>Name</Text>
+              <Text style={[styles.settingsItemValue, { color: colors.subtext }]}>{user?.full_name}</Text>
+            </View>
+          </View>
+          <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.settingsItem}>
+            <MaterialIcons name="phone" size={20} color={colors.primary} />
+            <View style={styles.settingsItemContent}>
+              <Text style={[styles.settingsItemLabel, { color: colors.text }]}>Phone</Text>
+              <Text style={[styles.settingsItemValue, { color: colors.subtext }]}>{user?.phone}</Text>
+            </View>
+          </View>
+          <View style={[styles.settingsDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.settingsItem}>
+            <MaterialIcons name="location-city" size={20} color={colors.primary} />
+            <View style={styles.settingsItemContent}>
+              <Text style={[styles.settingsItemLabel, { color: colors.text }]}>City</Text>
+              <Text style={[styles.settingsItemValue, { color: colors.subtext }]}>{user?.city}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Account Actions */}
+        <Text style={[styles.settingsSectionTitle, { color: colors.text }]}>Account</Text>
+        <TouchableOpacity 
+          style={[styles.settingsButton, { backgroundColor: '#ff6b6b', borderColor: '#ff6b6b' }]}
+          onPress={onLogout}
+        >
+          <MaterialIcons name="logout" size={20} color="#fff" />
+          <Text style={[styles.settingsButtonText, { color: '#fff' }]}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
+
+// Driver Support Screen Component
+function DriverSupportScreen() {
+  const { colors } = useTheme();
+
+  return (
+    <ScrollView style={[styles.supportContainer, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+      <View style={[styles.supportHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <Text style={[styles.supportHeaderTitle, { color: colors.text }]}>Support</Text>
+        <Text style={[styles.supportHeaderSubtitle, { color: colors.subtext }]}>Get help and contact us</Text>
+      </View>
+
+      <View style={[styles.supportContent, { backgroundColor: colors.background }]}>
+        <View style={[styles.supportCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <MaterialIcons name="phone" size={32} color={colors.primary} />
+          <Text style={[styles.supportCardTitle, { color: colors.text }]}>Call Support</Text>
+          <Text style={[styles.supportCardSubtitle, { color: colors.subtext }]}>+1 (555) 123-4567</Text>
+        </View>
+
+        <View style={[styles.supportCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <MaterialIcons name="mail" size={32} color={colors.primary} />
+          <Text style={[styles.supportCardTitle, { color: colors.text }]}>Email Us</Text>
+          <Text style={[styles.supportCardSubtitle, { color: colors.subtext }]}>support@wiyonecab.com</Text>
+        </View>
+
+        <View style={[styles.supportCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <MaterialIcons name="help-center" size={32} color={colors.primary} />
+          <Text style={[styles.supportCardTitle, { color: colors.text }]}>FAQ</Text>
+          <Text style={[styles.supportCardSubtitle, { color: colors.subtext }]}>Visit our help center</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    paddingTop: 0,
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 19,
-    color: "#888888",
     fontFamily: "System",
+  },
+
+  /* Home Tab */
+  homeContainer: {
+    flex: 1,
+    paddingTop: 0,
   },
 
   /* Header */
   header: {
-    backgroundColor: "#000000",
     paddingTop: 24,
     paddingHorizontal: 24,
     paddingBottom: 20,
@@ -363,13 +528,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 17,
-    color: "#FFB81C",
     fontFamily: "System",
   },
   logoutButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: "#FFB81C",
     borderRadius: 4,
     marginLeft: 12,
   },
@@ -382,11 +545,9 @@ const styles = StyleSheet.create({
 
   /* User Card */
   userCard: {
-    backgroundColor: "#1a1a1a",
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: "#FFB81C",
   },
   userCardContent: {
     flexDirection: "row",
@@ -399,23 +560,19 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#FFFFFF",
     marginBottom: 4,
     fontFamily: "System",
   },
   userPhone: {
     fontSize: 17,
-    color: "#B0B0B0",
     marginBottom: 2,
     fontFamily: "System",
   },
   userEmail: {
     fontSize: 15,
-    color: "#888888",
     fontFamily: "System",
   },
   roleBadge: {
-    backgroundColor: "#FFB81C",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
@@ -427,9 +584,20 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
 
-  /* Driver: Status */
-  driverStatusContainer: {
-    marginBottom: 24,
+  /* Content */
+  content: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    paddingBottom: 100,
+  },
+
+  /* Status */
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 16,
+    marginTop: 20,
+    fontFamily: "System",
   },
   statusToggle: {
     paddingVertical: 16,
@@ -438,50 +606,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
-    backgroundColor: "#F0F0F0",
     marginBottom: 24,
+    borderWidth: 2,
   },
   statusOnline: {
-    backgroundColor: "#E8F5E9",
     borderWidth: 2,
-    borderColor: "#4CAF50",
   },
   statusDot: {
     fontSize: 20,
-    color: "#4CAF50",
     marginRight: 8,
   },
   statusText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#000000",
     fontFamily: "System",
   },
 
-  /* Driver: Earnings */
+  /* Earnings */
   earningsBox: {
-    backgroundColor: "#FFF9E6",
     borderRadius: 8,
     padding: 20,
     alignItems: "center",
     marginBottom: 24,
+    borderWidth: 1,
   },
   earningsAmount: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#FFB81C",
     marginBottom: 4,
     fontFamily: "System",
   },
   earningsLabel: {
     fontSize: 14,
-    color: "#666666",
     fontFamily: "System",
   },
 
   /* Empty State */
   emptyState: {
-    backgroundColor: "#F9F9F9",
     borderRadius: 8,
     padding: 32,
     alignItems: "center",
@@ -494,18 +655,16 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#000000",
     marginBottom: 4,
     fontFamily: "System",
   },
   emptyStateSubtext: {
     fontSize: 13,
-    color: "#888888",
     textAlign: "center",
     fontFamily: "System",
   },
 
-  /* Stats Container */
+  /* Stats */
   statsContainer: {
     flexDirection: "row",
     gap: 12,
@@ -513,7 +672,6 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: "#F0F0F0",
     borderRadius: 8,
     padding: 16,
     alignItems: "center",
@@ -521,26 +679,22 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#FFB81C",
     marginBottom: 4,
     fontFamily: "System",
   },
   statLabel: {
     fontSize: 12,
-    color: "#888888",
     textAlign: "center",
     fontFamily: "System",
   },
 
-  /* Driver: Approval Pending */
+  /* Approval Pending */
   approvalPending: {
-    backgroundColor: "#FFF9E6",
     borderRadius: 12,
     padding: 24,
     alignItems: "center",
     marginTop: 24,
     borderWidth: 2,
-    borderColor: "#FFB81C",
   },
   approvalIcon: {
     fontSize: 48,
@@ -549,13 +703,11 @@ const styles = StyleSheet.create({
   approvalTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#000000",
     marginBottom: 12,
     fontFamily: "System",
   },
   approvalText: {
     fontSize: 14,
-    color: "#333333",
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 12,
@@ -563,68 +715,16 @@ const styles = StyleSheet.create({
   },
   approvalNote: {
     fontSize: 12,
-    color: "#888888",
     fontStyle: "italic",
-    fontFamily: "System",
-  },
-
-  /* Content */
-  content: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#000000",
-    marginBottom: 16,
-    marginTop: 20,
-    fontFamily: "System",
-  },
-
-  /* Error */
-  errorBox: {
-    backgroundColor: "#ffebee",
-    borderLeftColor: "#D32F2F",
-    borderLeftWidth: 4,
-    padding: 12,
-    borderRadius: 4,
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  errorMessage: {
-    color: "#D32F2F",
-    fontSize: 16,
-    fontFamily: "System",
-  },
-  errorText: {
-    color: "#D32F2F",
-    fontSize: 18,
-    marginBottom: 16,
-    textAlign: "center",
-    fontFamily: "System",
-  },
-  button: {
-    backgroundColor: "#FFB81C",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
     fontFamily: "System",
   },
 
   /* Ride Cards */
   rideCard: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: "#FFB81C",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -640,14 +740,11 @@ const styles = StyleSheet.create({
   rideDistance: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#FFB81C",
   },
   rideTime: {
     fontSize: 12,
-    color: "#999",
   },
   rideRoute: {
-    backgroundColor: "#F9F9F9",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -655,23 +752,146 @@ const styles = StyleSheet.create({
   routeFrom: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#000",
     marginBottom: 6,
   },
   routeTo: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
   },
   acceptButton: {
-    backgroundColor: "#4CAF50",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
   },
   acceptButtonText: {
-    color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
+  },
+
+  /* Error */
+  errorText: {
+    fontSize: 18,
+    marginBottom: 16,
+    textAlign: "center",
+    fontFamily: "System",
+  },
+  button: {
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    fontFamily: "System",
+  },
+
+  /* Settings Tab */
+  settingsContainer: {
+    flex: 1,
+  },
+  settingsHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  settingsHeaderTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  settingsHeaderSubtitle: {
+    fontSize: 14,
+  },
+  settingsContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingBottom: 100,
+  },
+  settingsSectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 12,
+    marginTop: 16,
+  },
+  settingsCard: {
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    marginBottom: 24,
+  },
+  settingsItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+  },
+  settingsItemContent: {
+    flex: 1,
+  },
+  settingsItemLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  settingsItemValue: {
+    fontSize: 14,
+  },
+  settingsDivider: {
+    height: 1,
+  },
+  settingsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  settingsButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  /* Support Tab */
+  supportContainer: {
+    flex: 1,
+  },
+  supportHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  supportHeaderTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  supportHeaderSubtitle: {
+    fontSize: 14,
+  },
+  supportContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingBottom: 100,
+    gap: 16,
+  },
+  supportCard: {
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  supportCardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  supportCardSubtitle: {
+    fontSize: 12,
+    textAlign: "center",
   },
 });
