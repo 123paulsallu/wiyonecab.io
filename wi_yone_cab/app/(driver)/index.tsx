@@ -274,27 +274,7 @@ function HomeTabContent({
       <View style={[styles.content, { backgroundColor: colors.background }]}>
         {user?.is_driver_approved ? (
           <>
-            {/* Driver Status Toggle */}
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Status</Text>
-            <TouchableOpacity
-              style={[
-                styles.statusToggle,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                isOnline && { ...styles.statusOnline, borderColor: colors.primary },
-              ]}
-              onPress={() => setIsOnline(!isOnline)}
-            >
-              <Text style={styles.statusDot}>{isOnline ? "🟢" : "⚪"}</Text>
-              <Text style={[styles.statusText, { color: colors.text }]}>
-                {isOnline ? "Online" : "Offline"}
-              </Text>
-            </TouchableOpacity>
 
-            {/* Earnings */}
-            <View style={[styles.earningsBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.earningsAmount, { color: colors.primary }]}>${earnings.toFixed(2)}</Text>
-              <Text style={[styles.earningsLabel, { color: colors.subtext }]}>Today's Earnings</Text>
-            </View>
 
             {/* Active Requests */}
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Available Requests</Text>
@@ -342,18 +322,6 @@ function HomeTabContent({
               </View>
             )}
 
-            {/* Stats */}
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Stats</Text>
-            <View style={styles.statsContainer}>
-              <View style={[styles.statBox, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>0</Text>
-                <Text style={[styles.statLabel, { color: colors.subtext }]}>Rides Today</Text>
-              </View>
-              <View style={[styles.statBox, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>5.0</Text>
-                <Text style={[styles.statLabel, { color: colors.subtext }]}>Rating</Text>
-              </View>
-            </View>
           </>
         ) : (
           <View style={[styles.approvalPending, { backgroundColor: colors.card, borderColor: colors.primary }]}>
