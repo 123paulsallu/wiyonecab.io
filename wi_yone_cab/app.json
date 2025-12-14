@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "wi_yone_cab",
+    "name": "WiYone Cab - Ride Sharing App",
     "slug": "wi_yone_cab",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,8 +8,27 @@
     "scheme": "wiyonecab",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "description": "WiYone Cab is a modern ride-sharing application that connects drivers and riders seamlessly. Book affordable rides, track your driver in real-time, and enjoy a safe transportation experience in Sierra Leone.",
+    "extra": {
+      "eas": {
+        "projectId": "cbb960b0-445e-4777-926b-5a3a4588d2a2"
+      },
+      "keywords": [
+        "ride sharing",
+        "taxi app",
+        "ride booking",
+        "transportation",
+        "Sierra Leone",
+        "WiYone Cab",
+        "cheap rides",
+        "safe transportation"
+      ],
+      "category": "Lifestyle",
+      "primaryCategory": "Taxi & Ride-sharing"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pauldevsl.wiyonecab"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +38,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.pauldevsl.wiyonecab"
     },
     "web": {
       "output": "static",
@@ -47,6 +67,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cbb960b0-445e-4777-926b-5a3a4588d2a2"
+      }
     }
   }
 }
