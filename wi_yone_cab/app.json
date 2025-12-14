@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "WiYone Cab - Ride Sharing App",
-    "slug": "wi_yone_cab",
+    "name": "WiYone Cab",
+    "slug": "wiyonecab",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
