@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "WiYone Cab",
-    "slug": "wiyonecab",
+    "slug": "wi_yone_cab",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
