@@ -9,23 +9,6 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "description": "WiYone Cab is a modern ride-sharing application that connects drivers and riders seamlessly. Book affordable rides, track your driver in real-time, and enjoy a safe transportation experience in Sierra Leone.",
-    "extra": {
-      "eas": {
-        "projectId": "cbb960b0-445e-4777-926b-5a3a4588d2a2"
-      },
-      "keywords": [
-        "ride sharing",
-        "taxi app",
-        "ride booking",
-        "transportation",
-        "Sierra Leone",
-        "WiYone Cab",
-        "cheap rides",
-        "safe transportation"
-      ],
-      "category": "Lifestyle",
-      "primaryCategory": "Taxi & Ride-sharing"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pauldevsl.wiyonecab"
@@ -39,7 +22,15 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.pauldevsl.wiyonecab"
+      "package": "com.pauldevsl.wiyonecab",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_CONTACTS",
+        "READ_CALENDAR"
+      ]
     },
     "web": {
       "output": "static",
@@ -72,7 +63,19 @@
       "router": {},
       "eas": {
         "projectId": "cbb960b0-445e-4777-926b-5a3a4588d2a2"
-      }
+      },
+      "keywords": [
+        "ride sharing",
+        "taxi app",
+        "ride booking",
+        "transportation",
+        "Sierra Leone",
+        "WiYone Cab",
+        "cheap rides",
+        "safe transportation"
+      ],
+      "category": "Lifestyle",
+      "primaryCategory": "Taxi & Ride-sharing"
     }
   }
 }
