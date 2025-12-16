@@ -2,7 +2,9 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert,
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
 import { customSignUp } from "../lib/customAuth";
+import { supabase } from "../lib/supabase";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -26,6 +28,7 @@ export default function SignUpScreen() {
   const [idNumber, setIdNumber] = useState("");
   const [nationalIdFile, setNationalIdFile] = useState<any>(null);
   const [driverLicenseFile, setDriverLicenseFile] = useState<any>(null);
+  const [passportPhotoFile, setPassportPhotoFile] = useState<any>(null);
 
   const pickFile = async (fileType: 'nationalId' | 'driverLicense') => {
     try {
@@ -46,6 +49,110 @@ export default function SignUpScreen() {
     }
   };
 
+  const uploadFileToBucket = async (bucket: string, file: any, prefix: string, maxRetries: number = 3) => {
+    try {
+      if (!file || !file.uri) return null;
+      const uri: string = file.uri;
+      // infer extension
+      const name = file.name || uri.split('/').pop() || `${prefix}`;
+      const extMatch = name.match(/\.([0-9a-zA-Z]+)$/);
+      const ext = extMatch ? extMatch[1] : 'jpg';
+      const path = `${bucket}/${prefix}_${Date.now()}.${ext}`;
+
+      // Use Expo FileSystem to read file as base64 (more reliable on mobile)
+      let base64Data: string | null = null;
+      try {
+        base64Data = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      } catch (fsErr: any) {
+        // Fallback: try fetch + blob approach
+        console.warn('FileSystem read failed, falling back to fetch:', fsErr);
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        base64Data = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve((reader.result as string).split(',')[1] || '');
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      if (!base64Data) throw new Error('Could not read file');
+
+      // Retry logic with exponential backoff
+      let lastError: any = null;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const { error: uploadError } = await supabase.storage
+            .from(bucket)
+            .upload(path, decode(base64Data), {
+              contentType: getContentType(ext),
+              cacheControl: '3600',
+              upsert: false,
+            });
+
+          if (uploadError) {
+            throw new Error(uploadError.message || 'Upload failed');
+          }
+
+          const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+          return data?.publicUrl || null;
+        } catch (err: any) {
+          lastError = err;
+          if (attempt < maxRetries) {
+            const delay = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
+            console.warn(`Upload attempt ${attempt + 1} failed, retrying in ${delay}ms...`, err?.message);
+            await new Promise(r => setTimeout(r, delay));
+          }
+        }
+      }
+
+      throw lastError || new Error('Upload failed after retries');
+    } catch (err) {
+      console.error('Error uploading file to drivers bucket:', err);
+      const msg = err?.message || String(err);
+
+      // Detect Row-Level Security errors and provide actionable guidance
+      if (msg.toLowerCase().includes('row-level security') || msg.toLowerCase().includes('violates row-level')) {
+        const guidance =
+          'Row-level security (RLS) is preventing storage inserts.\n' +
+          'Quick fixes:\n' +
+          '1) Make the `drivers` bucket public in Supabase Storage settings.\n' +
+          '2) Or add an INSERT policy for storage.objects restricted to the drivers bucket.\n' +
+          "Example SQL (run in Supabase SQL editor):\n" +
+          "CREATE POLICY allow_public_insert_on_drivers\nON storage.objects\nFOR INSERT\nWITH CHECK (bucket_id = 'drivers');\n" +
+          "-- Be careful: this allows public uploads to the 'drivers' bucket.\n";
+
+        throw new Error(`${msg}.\n\n${guidance}`);
+      }
+
+      // Network-related guidance
+      throw new Error(msg.includes('Network request failed') ? 'Network error. Please check your internet connection and try again.' : msg);
+    }
+  };
+
+  const decode = (base64: string): Uint8Array => {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  };
+
+  const getContentType = (ext: string): string => {
+    const types: Record<string, string> = {
+      pdf: 'application/pdf',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+    };
+    return types[ext.toLowerCase()] || 'application/octet-stream';
+  };
+
   const handleSignUp = async () => {
     // client-side final validation
     const newErrors: Record<string, string> = {};
@@ -56,10 +163,36 @@ export default function SignUpScreen() {
     if (password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match";
     if (role === "driver" && !idNumber) newErrors.id_number = "ID number is required for drivers";
     if (role === "driver" && !nationalIdFile) newErrors.id_document = "National ID upload is required for drivers";
-    if (role === "driver" && !driverLicenseFile) newErrors.driver_license = "Driver license upload is required for drivers";
+
+    // Rider-specific requirements: require national ID and passport photo
+    if (role === 'rider') {
+      if (!idNumber) newErrors.id_number = 'ID number is required for riders';
+      if (!nationalIdFile) newErrors.id_document = 'National ID upload is required for riders';
+      if (!passportPhotoFile) newErrors.passport_photo = 'Passport photo upload is required for riders';
+    }
+
+    // Validate NIN (if selected)
+    if (idType === 'nin') {
+      const ninRegex = /^[A-Za-z0-9]{8}$/;
+      if (!idNumber || !ninRegex.test(idNumber)) {
+        newErrors.id_number = 'NIN must be 8 alphanumeric characters';
+      }
+      if (!nationalIdFile) {
+        newErrors.id_document = 'National ID upload is required when using NIN';
+      }
+    }
+
+    // Phone validation: allow 9 or 12 digits (digits only)
+    const phoneDigits = phone.replace(/[^0-9]/g, '');
+    if (!/^(\d{9}|\d{12})$/.test(phoneDigits)) {
+      newErrors.phone = 'Phone must be 9 or 12 digits (numbers only)';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      // show concise Alert with errors for immediate feedback
+      const first = Object.values(newErrors).slice(0, 3).join('\n');
+      Alert.alert('Validation error', first);
       return;
     }
 
@@ -70,15 +203,73 @@ export default function SignUpScreen() {
 
     setLoading(true);
     try {
+      // Upload files first (if required)
+      let nationalIdUrl: string | undefined;
+      let driverLicenseUrl: string | undefined;
+      let passportUrl: string | undefined;
+
+      // Uploads: drivers -> 'drivers' bucket, riders -> 'riders' bucket
+      if (role === 'driver' && nationalIdFile) {
+        try {
+          const uploaded = await uploadFileToBucket('drivers', nationalIdFile, `${username}_nationalid`);
+          nationalIdUrl = uploaded || undefined;
+        } catch (uploadErr: any) {
+          console.error('National ID upload failed:', uploadErr);
+          Alert.alert('Upload Error', uploadErr?.message || 'Failed to upload national ID. Please try again.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      if (role === 'driver' && driverLicenseFile) {
+        try {
+          const uploaded = await uploadFileToBucket('drivers', driverLicenseFile, `${username}_license`);
+          driverLicenseUrl = uploaded || undefined;
+        } catch (uploadErr: any) {
+          console.warn('Driver license upload failed, continuing without license.', uploadErr);
+          Alert.alert('Upload Warning', 'Driver license upload failed but signup will continue. You can add it later.');
+        }
+      }
+
+      if (role === 'rider') {
+        // Rider must upload national ID and passport photo
+        if (nationalIdFile) {
+          try {
+            const uploaded = await uploadFileToBucket('riders', nationalIdFile, `${username}_nationalid`);
+            nationalIdUrl = uploaded || undefined;
+          } catch (uploadErr: any) {
+            console.error('Rider national ID upload failed:', uploadErr);
+            Alert.alert('Upload Error', uploadErr?.message || 'Failed to upload national ID. Please try again.');
+            setLoading(false);
+            return;
+          }
+        }
+
+        if (passportPhotoFile) {
+          try {
+            const uploaded = await uploadFileToBucket('riders', passportPhotoFile, `${username}_passport`);
+            passportUrl = uploaded || undefined;
+          } catch (uploadErr: any) {
+            console.error('Passport upload failed:', uploadErr);
+            Alert.alert('Upload Error', uploadErr?.message || 'Failed to upload passport photo. Please try again.');
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       // Call custom sign up (no Supabase Auth, uses custom users table)
+      // For riders, pass passport URL in the driverLicenseUrl slot (profiles table re-uses that field for passport)
       const signupResult = await customSignUp(
         username,
         password,
         fullName,
         phone,
         role as 'rider' | 'driver',
-        undefined, // nationalIdUrl - can be added later if needed
-        undefined  // driverLicenseUrl - can be added later if needed
+        nationalIdUrl,
+        role === 'rider' ? passportUrl : driverLicenseUrl,
+        idNumber,
+        idType
       );
 
       if (!signupResult.success) {
@@ -93,7 +284,24 @@ export default function SignUpScreen() {
         return;
       }
 
-      // Show success and navigate to correct dashboard
+      // Show success and navigate to correct dashboard only if all criteria met
+      const meetsCriteria = () => {
+        if (role === 'driver') {
+          if (idType === 'nin') {
+            if (!idNumber || !/^[A-Za-z0-9]{8}$/.test(idNumber)) return false;
+            if (!nationalIdUrl) return false;
+          }
+        }
+        return true;
+      };
+
+      if (!meetsCriteria()) {
+        // Should not happen because client validated earlier, but guard anyway
+        Alert.alert('Signup incomplete', 'Required documents or data are missing. Please complete all required fields.');
+        setLoading(false);
+        return;
+      }
+
       if (role === 'driver') {
         setSignupMessage('Driver account created! Pending approval...');
       } else {
@@ -137,9 +345,16 @@ export default function SignUpScreen() {
       if (!phone) stepErrors.phone = 'Phone number is required';
     }
 
-    if (step === 3 && role === "driver") {
-      if (!idType) stepErrors.id_type = 'ID type is required';
-      if (!idNumber) stepErrors.id_number = 'ID number is required';
+    if (step === 3) {
+      if (role === 'driver') {
+        if (!idType) stepErrors.id_type = 'ID type is required';
+        if (!idNumber) stepErrors.id_number = 'ID number is required';
+      } else if (role === 'rider') {
+        if (!idType) stepErrors.id_type = 'ID type is required';
+        if (!idNumber) stepErrors.id_number = 'ID number is required';
+        if (!nationalIdFile) stepErrors.id_document = 'National ID upload is required for riders';
+        if (!passportPhotoFile) stepErrors.passport_photo = 'Passport photo is required for riders';
+      }
     }
 
     if (Object.keys(stepErrors).length > 0) {
@@ -164,7 +379,7 @@ export default function SignUpScreen() {
         <View style={styles.progressContainer}>
           <View style={[styles.progressBar, { width: `${(step / 4) * 100}%` }]} />
         </View>
-        <Text style={styles.stepText}>Step {step} of {role === "driver" ? 4 : 3}</Text>
+        <Text style={styles.stepText}>Step {step} of 4</Text>
 
         {/* Step 1: Basic Info */}
         {step === 1 && (
@@ -264,7 +479,7 @@ export default function SignUpScreen() {
           </View>
         )}
 
-        {/* Step 3: Driver Info (only if driver) */}
+        {/* Step 3: Driver Info (driver) or Rider documents (rider) */}
         {step === 3 && role === "driver" && (
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>Driver Information</Text>
@@ -326,6 +541,66 @@ export default function SignUpScreen() {
           </View>
         )}
 
+        {step === 3 && role === 'rider' && (
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Rider Identification</Text>
+
+            <Text style={styles.idTypeLabel}>ID Type</Text>
+            <View style={styles.idTypeContainer}>
+              <TouchableOpacity
+                style={[styles.idTypeButton, idType === "nin" && styles.idTypeButtonActive]}
+                onPress={() => setIdType("nin")}
+              >
+                <Text style={[styles.idTypeButtonText, idType === "nin" && styles.idTypeButtonTextActive]}>NIN</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.idTypeButton, idType === "passport" && styles.idTypeButtonActive]}
+                onPress={() => setIdType("passport")}
+              >
+                <Text style={[styles.idTypeButtonText, idType === "passport" && styles.idTypeButtonTextActive]}>Passport</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder={`${idType.toUpperCase()} Number`}
+                placeholderTextColor="#B0B0B0"
+                value={idNumber}
+                onChangeText={setIdNumber}
+              />
+              <View style={styles.underline} />
+              {errors.id_number && <Text style={styles.errorText}>{errors.id_number}</Text>}
+            </View>
+
+            <Text style={styles.fileUploadLabel}>National ID Document</Text>
+            <TouchableOpacity style={styles.filePickButton} onPress={() => pickFile('nationalId')}>
+              <Text style={styles.filePickButtonText}>
+                {nationalIdFile ? `✓ ${nationalIdFile.name}` : '+ Upload National ID (PDF/Image)'}
+              </Text>
+            </TouchableOpacity>
+            {errors.id_document && <Text style={styles.errorText}>{errors.id_document}</Text>}
+
+            <Text style={styles.fileUploadLabel}>Passport / Photo</Text>
+            <TouchableOpacity
+              style={styles.filePickButton}
+              onPress={async () => {
+                try {
+                  const result = await DocumentPicker.getDocumentAsync({ type: ['image/*'] });
+                  if (!result.canceled) setPassportPhotoFile(result.assets[0]);
+                } catch (err: any) {
+                  Alert.alert('Error', 'Failed to pick passport photo: ' + (err?.message || String(err)));
+                }
+              }}
+            >
+              <Text style={styles.filePickButtonText}>
+                {passportPhotoFile ? `✓ ${passportPhotoFile.name}` : '+ Upload Passport Photo (Image)'}
+              </Text>
+            </TouchableOpacity>
+            {errors.passport_photo && <Text style={styles.errorText}>{errors.passport_photo}</Text>}
+          </View>
+        )}
+
         {/* Step 4: Review (Driver Only) or submit for Rider */}
         {step === (role === "driver" ? 4 : 3) && (
           <View style={styles.formSection}>
@@ -369,7 +644,7 @@ export default function SignUpScreen() {
             </TouchableOpacity>
           )}
 
-          {step < (role === "driver" ? 4 : 3) ? (
+          {step < 4 ? (
             <TouchableOpacity
               style={styles.button}
               onPress={() => handleStepChange(step + 1)}

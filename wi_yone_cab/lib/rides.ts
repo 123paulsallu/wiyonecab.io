@@ -22,6 +22,20 @@ export interface Ride {
   updated_at: string;
 }
 
+/**
+ * Calculate distance between two coordinates using Haversine formula (in kilometers)
+ */
+export function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export async function requestRide(params: {
   origin_address?: string;
   origin_lat?: number | null;
@@ -111,7 +125,10 @@ export async function getDriverProfile(driverId: string) {
 
 export async function getRidesForRider(): Promise<Ride[]> {
   const session = await getSession();
-  if (!session) throw new Error('Not authenticated');
+  if (!session) {
+    console.warn('getRidesForRider called without session - returning empty list');
+    return [];
+  }
 
   const { data, error } = await supabase
     .from('rides')
@@ -119,7 +136,10 @@ export async function getRidesForRider(): Promise<Ride[]> {
     .eq('rider_id', session.userId)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching rides for rider:', error);
+    throw error;
+  }
   return data || [];
 }
 
@@ -136,3 +156,35 @@ export async function updateRideStatus(rideId: string, newStatus: Ride['status']
 
   if (error) throw error;
 }
+
+/**
+ * Fetch all pending ride requests with optional distance filtering
+ * @param driverLat - Driver's current latitude
+ * @param driverLng - Driver's current longitude
+ * @param radiusKm - Search radius in kilometers (default: 10km)
+ */
+export async function getNearbyRides(driverLat: number, driverLng: number, radiusKm: number = 10): Promise<Ride[]> {
+  try {
+    // Fetch all pending/requested rides
+    const { data, error } = await supabase
+      .from('rides')
+      .select('*')
+      .eq('status', 'requested')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Filter by distance on client side
+    const nearbyRides = (data || []).filter(ride => {
+      if (!ride.origin_lat || !ride.origin_lng) return false;
+      const distance = calculateDistance(driverLat, driverLng, ride.origin_lat, ride.origin_lng);
+      return distance <= radiusKm;
+    });
+
+    return nearbyRides;
+  } catch (err) {
+    console.error('Error fetching nearby rides:', err);
+    throw err;
+  }
+}
+

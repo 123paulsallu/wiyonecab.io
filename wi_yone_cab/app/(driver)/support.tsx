@@ -13,7 +13,7 @@ export default function DriverSupportScreen({ onClose }: DriverSupportScreenProp
 
   // WhatsApp numbers and group link
   const SUPPORT_PHONE = '232072150563'; // Support phone number
-  const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/KkPqRkVz2E8'; // Replace with actual group link
+  const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/CfMzdzQoOjJ67DOKLljv47'; // Replace with actual group link
   const SUPPORT_EMAIL = 'driver-support@wiyonecab.com';
 
   const handleWhatsAppSupport = () => {

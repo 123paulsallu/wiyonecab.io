@@ -26,15 +26,36 @@ export async function customSignUp(
   phone: string,
   role: 'rider' | 'driver',
   nationalIdUrl?: string,
-  driverLicenseUrl?: string
+  driverLicenseUrl?: string,
+  nationalIdNumber?: string,
+  idType?: string
 ): Promise<{ success: boolean; userId?: string; error?: string }> {
   try {
-    // Check if username already exists
-    const { data: existingUser } = await supabase
+    // Basic server-side validation
+    if (!username || !password) return { success: false, error: 'Username and password are required' };
+    const phoneDigits = (phone || '').replace(/[^0-9]/g, '');
+    if (!/^(\d{9}|\d{12})$/.test(phoneDigits)) {
+      return { success: false, error: 'Phone must be 9 or 12 digits' };
+    }
+    if (role === 'driver' && idType === 'nin') {
+      if (!nationalIdNumber || !/^[A-Za-z0-9]{8}$/.test(nationalIdNumber)) {
+        return { success: false, error: 'NIN must be 8 alphanumeric characters' };
+      }
+      if (!nationalIdUrl) {
+        return { success: false, error: 'National ID document is required for drivers using NIN' };
+      }
+    }
+    // Check if username already exists (use maybeSingle to avoid throwing when no rows)
+    const { data: existingUser, error: existingError } = await supabase
       .from('users')
       .select('id')
       .eq('username', username)
-      .single();
+      .maybeSingle();
+
+    if (existingError) {
+      console.warn('Error checking existing username:', existingError);
+      // proceed - treat as not existing but log the issue
+    }
 
     if (existingUser) {
       return {
@@ -63,25 +84,45 @@ export async function customSignUp(
       };
     }
 
-    // Create profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: newUser.id,
-        username,
-        full_name: fullName,
-        phone,
-        role,
-        national_id_url: nationalIdUrl,
-        driver_license_url: driverLicenseUrl,
-      });
-
-    if (profileError) {
-      console.error('Profile creation error:', profileError);
-      return {
-        success: false,
-        error: profileError?.message || 'Failed to create profile',
+    // Create profile using secure RPC to avoid RLS issues
+    try {
+      const rpcParams = {
+        p_id: newUser.id,
+        p_username: username,
+        p_full_name: fullName,
+        p_phone: phone,
+        p_role: role,
+        p_national_id_url: nationalIdUrl || null,
+        p_driver_license_url: driverLicenseUrl || null,
+        p_national_id_number: nationalIdNumber || null,
+        p_id_type: idType || null,
       };
+
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_profile', rpcParams as any);
+      if (rpcError) {
+        console.error('create_profile RPC error:', rpcError);
+        // Attempt rollback of user to avoid orphaned users
+        try {
+          await supabase.from('users').delete().eq('id', newUser.id);
+        } catch (delErr) {
+          console.error('Failed to rollback user after RPC profile error:', delErr);
+        }
+
+        const msg = rpcError?.message || '';
+        const rlsHint = msg.toLowerCase().includes('row-level security') || msg.toLowerCase().includes('violates row-level')
+          ? ' Row-level security (RLS) is preventing profile creation. Run the provided SQL to create a SECURITY DEFINER RPC or adjust policies.'
+          : '';
+
+        return { success: false, error: (rpcError?.message || 'Failed to create profile') + rlsHint };
+      }
+    } catch (err: any) {
+      console.error('Unexpected error calling create_profile RPC:', err);
+      try {
+        await supabase.from('users').delete().eq('id', newUser.id);
+      } catch (delErr) {
+        console.error('Failed to rollback user after unexpected RPC error:', delErr);
+      }
+      return { success: false, error: err?.message || 'Failed to create profile' };
     }
 
     // Save session
